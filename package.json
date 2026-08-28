@@ -1,0 +1,10 @@
+{
+    "devDependencies": {
+        "comment-lint": "^0.3.4"
+    },
+    "scripts": {
+        "lint:prose": "commentlint",
+        "lint:prose:concise": "commentlint --concise",
+        "lint": "pnpm run lint:prose"
+    }
+}

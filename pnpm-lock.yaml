@@ -1,0 +1,24 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      comment-lint:
+        specifier: ^0.3.4
+        version: 0.3.4
+
+packages:
+
+  comment-lint@0.3.4:
+    resolution: {integrity: sha512-sFZ+Rwg9Ne/PVn8CYt0AlO1esKCuy6KgFF9k7IzEkba1F8dWMzCHGi/JyBaRnE1Xu7yfxgg7tOe8OsZ4HexYfQ==}
+    engines: {node: '>=16'}
+    hasBin: true
+
+snapshots:
+
+  comment-lint@0.3.4: {}
