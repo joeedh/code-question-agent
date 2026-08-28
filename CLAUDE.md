@@ -7,6 +7,17 @@
 - **Bundler:** esbuild.
 - **Formatter:** `@pathtx/prettier`.
 - **Linter:** eslint and commentlint.
+- **Package Manager**: pnpm
+
+# Documentation
+
+- Design docs go in `docs/`.
+- Research reports go in `docs/research/`.
+- Plans go in `docs/plans/`; always write them to the repo rather than leaving them only in
+  conversation.
+- Keep a running debugging guide in `docs/debugging.md`. Add a lesson there whenever a bug
+  turns out to have a non-obvious cause, so the next debugging session starts from what was
+  already learned.
 
 # Commentlint
 
