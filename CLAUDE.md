@@ -4,10 +4,11 @@
   7.0, shipped July 2026 — the Go rewrite, codename Corsa, is now the
   standard `tsc` inside the `typescript` package; `tsgo` refers only to the
   bleeding-edge nightly channel). This is currently the latest TypeScript.
-- **Bundler:** esbuild.
-- **Formatter:** `@pathtx/prettier`.
-- **Linter:** eslint and commentlint.
+- **Bundler:** `pnpm build` runs esbuild.
+- **Formatter:** `pnpm format` runs @pathtx/prettier`.
+- **Linter:** `pnpm lint` runs both eslint and commentlint.
 - **Package Manager**: pnpm
+- **Typechecking**: `pnpm typecheck`
 
 # Documentation
 
@@ -56,7 +57,6 @@ If a napi plugin becomes necessary:
   default). Build a small internal tool to handle this environment setup
   per-platform, rather than relying on ad hoc scripts per developer
   machine.
-
 
 ## Comments
 

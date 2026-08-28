@@ -1,10 +1,26 @@
 {
-    "devDependencies": {
-        "comment-lint": "^0.3.4"
-    },
-    "scripts": {
-        "lint:prose": "commentlint",
-        "lint:prose:concise": "commentlint --concise",
-        "lint": "pnpm run lint:prose"
-    }
+  "name": "code-question-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "lint": "pnpm run lint:eslint && pnpm run lint:prose",
+    "lint:eslint": "eslint .",
+    "lint:prose": "commentlint",
+    "lint:prose:concise": "commentlint --concise",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@pathtx/prettier": "3.3.0-dev",
+    "@types/node": "^24.0.0",
+    "comment-lint": "^0.3.4",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.9.1",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
 }
