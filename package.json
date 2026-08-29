@@ -5,6 +5,7 @@
   "scripts": {
     "cli" : "node apps/cli/dist/index.js",
     "build": "node scripts/build.mjs",
+    "clean": "node scripts/build.mjs clean",
     "lint": "pnpm run lint:eslint && pnpm run lint:prose",
     "lint:eslint": "eslint .",
     "lint:prose": "commentlint",

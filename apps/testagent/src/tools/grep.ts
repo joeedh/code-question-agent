@@ -2,7 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { IGNORED_DIR_NAMES, resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
 import type { TestAgentConfig } from "../config.ts";
-import { filterPath, filterCode } from "../config.ts";
+import { skipPath, filterCode } from "../config.ts";
+import child_process from "node:child_process";
 
 const MAX_CONTEXT_LINES = 25;
 
@@ -36,7 +37,7 @@ async function collectFiles(dir: string): Promise<string[]> {
     
     if (entry.isDirectory()) {
       files.push(...(await collectFiles(full)));
-    } else if (entry.isFile() && !filterPath(entry.name)) {
+    } else if (entry.isFile() && !skipPath(entry.name)) {
       files.push(full);
     }
   }
@@ -85,7 +86,7 @@ export const grepTool: Tool = {
     const context = Math.max(0, Math.min(MAX_CONTEXT_LINES, contextLines ?? 0));
     const regexp = new RegExp(pattern);
     const root = resolveWorkspacePath(ctx.workspaceDir, relPath ?? ".");
-
+    
     const stat = await readdir(root, { withFileTypes: true }).catch(() => undefined);
     const files = stat !== undefined ? await collectFiles(root) : [root];
 

@@ -129,8 +129,6 @@ export function validateConfig(raw: unknown, configPath: string): TestAgentConfi
         fail(`"stripAllDocs.${key}" must be a boolean`);
       }
     }
-
-    return theConfig
   }
 
   Object.assign(theConfig, {
@@ -142,6 +140,8 @@ export function validateConfig(raw: unknown, configPath: string): TestAgentConfi
     effort,
     stripAllDocs,
   });
+
+  return theConfig;
 }
 
 /**
@@ -204,10 +204,10 @@ export function resolveToolSelection(
   return cliToolsFlag;
 }
 
-export function filterPath(path: string) {
-  return theConfig.stripAllDocs ? isCode(path) : true;
+export function skipPath(path: string) {
+  return theConfig.stripAllDocs.markdown ? !isCode(path) : false;
 }
 
 export function filterCode(code: string, path: string) {
-  return theConfig.stripAllDocs ? stripComments(code, path) : code;
+  return theConfig.stripAllDocs.comments ? stripComments(code, path) : code;
 }

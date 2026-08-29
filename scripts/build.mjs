@@ -1,12 +1,12 @@
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import * as esbuild from "esbuild";
 
-const COMMAND = process.argv.find('clean') ? 'clean' : 'build'
+const COMMAND = process.argv.find(s => s ==='clean') ? 'clean' : 'build'
 
 const execFileAsync = promisify(execFile);
 
@@ -65,7 +65,10 @@ async function declareMember(memberDir) {
 const members = await findWorkspaceMembers();
 if (COMMAND === 'clean') {
   for (const memberDir of members) {
-    await rm(path.join(memberDir, "dist"), { recursive: true, force: true });
+    const distDir = path.join(memberDir, "dist");
+    if (existsSync(distDir)) {
+      await rm(distDir, { recursive: true, force: true });
+    }
   }
   process.exit(0)
 }
