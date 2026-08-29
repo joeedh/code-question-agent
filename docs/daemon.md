@@ -45,7 +45,10 @@ See also: [`docs/cli.md`](cli.md) for the client side,
 
 JSON-RPC over the socket/pipe (`vscode-jsonrpc`). Three requests:
 
-- `status` → `StatusResult`: `{ pid, repoRoot, startedAt, indexing }`.
+- `status` → `StatusResult`: `{ pid, repoRoot, startedAt, indexing, filesIndexed?, filesTotal?
+  }`. `filesTotal`/`filesIndexed` track the cold-start scan's progress — `filesTotal` is set
+  once `listTrackedFiles` resolves, `filesIndexed` increments after each file — and are the
+  daemon-side half of the CLI's `-v`'s `scan` tag (`docs/cli.md`).
 - `query` → `Report`, given a `QueryRequest`: `{ query: Query, report: "symbol-info" |
   "what-refs" | "enclosing-scope" }`. `Query` (symbol name or regexp, plus optional
   `file`/`line`/`col`/`fileInclude`/`fileExclude`) lives in `@code-question-agent/core`;

@@ -15,6 +15,10 @@ export interface StatusResult {
   repoRoot: string;
   startedAt: string;
   indexing: boolean;
+  /** How many of the cold-start scan's files have been indexed so far. Absent until the scan's file list is known. */
+  filesIndexed?: number;
+  /** Total files the cold-start scan found. Absent until the scan's file list is known. */
+  filesTotal?: number;
 }
 
 /** Written to `daemon.json` on startup — a hint for where to connect, never trusted on its own. */

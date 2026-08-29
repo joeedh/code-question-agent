@@ -38,6 +38,13 @@ async function initFixtureRepo(repoDir: string): Promise<void> {
   await git(repoDir, ["commit", "--quiet", "-m", "initial"]);
 }
 
+describe("cli --help", () => {
+  it("prints usage and exits without touching the daemon", async () => {
+    const { stdout } = await execFileAsync(process.execPath, [cliEntry, "--help"]);
+    expect(stdout).toContain("Usage: code-question-agent <query> [flags]");
+  });
+});
+
 describe.skipIf(!tscPath)("cli, end to end", () => {
   let repoDir: string;
   let dataDir: string;

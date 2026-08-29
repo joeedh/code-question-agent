@@ -66,11 +66,15 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
   const indexer = createIndexer(db, bridge);
   const startedAt = new Date().toISOString();
   let indexing = true;
+  let filesIndexed = 0;
+  let filesTotal: number | undefined;
 
   const coldIndex = (async () => {
     const files = await listTrackedFiles(paths.repoRoot);
+    filesTotal = files.length;
     for (const file of files) {
       await indexer.indexFile(file).catch(() => undefined);
+      filesIndexed++;
     }
     indexing = false;
   })();
@@ -94,7 +98,14 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
   }
 
   const ipc = await startIpcServer(paths.ipcAddress, {
-    status: async () => ({ pid: process.pid, repoRoot: paths.repoRoot, startedAt, indexing }),
+    status: async () => ({
+      pid: process.pid,
+      repoRoot: paths.repoRoot,
+      startedAt,
+      indexing,
+      filesIndexed,
+      filesTotal,
+    }),
     query: (request: QueryRequest) => answerQuery(db, request),
     // `shutdown()` closes the IPC server, which waits for every open connection — including
     // this handler's own — to end first. Answering the request before running it (deferred a

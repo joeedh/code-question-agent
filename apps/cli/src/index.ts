@@ -1,28 +1,36 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
-import { parseCliArgs } from "./args.ts";
+import { formatHelp, parseCliArgs } from "./args.ts";
 import { ensureDaemon, waitForIndexing } from "./connection.ts";
 import { formatHuman, formatJson } from "./format.ts";
+import { resolveQueryInput } from "./queryInput.ts";
 import { runQuery } from "./query.ts";
 import { createSnippetReader } from "./snippet.ts";
 
-export { parseCliArgs, type CliOptions } from "./args.ts";
+export { formatHelp, parseCliArgs, type CliOptions } from "./args.ts";
 export { ensureDaemon, waitForIndexing } from "./connection.ts";
 export { formatHuman, formatJson } from "./format.ts";
+export { resolveQueryInput } from "./queryInput.ts";
 export { buildQuery, resolvedSymbolsOf, runQuery, type QueryResult } from "./query.ts";
 export { createSnippetReader, type SnippetReader } from "./snippet.ts";
+export { createVerboseLogger, type VerboseLogger } from "./verbose.ts";
 
 async function main(): Promise<void> {
   const opts = parseCliArgs(process.argv.slice(2));
-  const repoRoot = opts.repo ?? process.cwd();
+  if (opts.help) {
+    console.log(formatHelp());
+    return;
+  }
+  const resolvedOpts = { ...opts, query: await resolveQueryInput(opts) };
+  const repoRoot = resolvedOpts.repo ?? process.cwd();
 
-  const { connection } = await ensureDaemon(repoRoot, opts);
+  const { connection } = await ensureDaemon(repoRoot, resolvedOpts);
   try {
-    await waitForIndexing(connection, opts);
-    const result = await runQuery(connection, opts);
-    const output = opts.json
+    await waitForIndexing(connection, resolvedOpts);
+    const result = await runQuery(connection, resolvedOpts);
+    const output = resolvedOpts.json
       ? formatJson(result)
-      : await formatHuman(result, opts, createSnippetReader());
+      : await formatHuman(result, resolvedOpts, createSnippetReader());
     console.log(output);
   } finally {
     connection.dispose();

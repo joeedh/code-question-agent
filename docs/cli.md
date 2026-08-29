@@ -13,7 +13,8 @@ code-question-agent <query> [flags]
 ```
 
 - `<query>` — the only positional argument. A symbol name (default) or a regexp pattern
-  (with `--regexp`). Required; missing it throws before any daemon contact.
+  (with `--regexp`). Required unless `--query-file` or `--help` is given; missing it throws
+  before any daemon contact.
 
 ## Flags
 
@@ -21,6 +22,9 @@ code-question-agent <query> [flags]
 
 - `--regexp` — treat `<query>` as a name regexp (`SearchQuery`) instead of an exact symbol
   name (`SymbolQuery`).
+- `--query-file <path>` — read `<query>` from this file instead of the positional argument,
+  trimmed of surrounding whitespace. Mutually exclusive with `<query>`; passing both throws
+  before any daemon contact.
 - `--file <path>` — disambiguate by declaring file (exact match against the stored `file://`
   URI). `SymbolQuery` only.
 - `--line <n>` / `--col <n>` — disambiguate by declaration position (0-indexed, matching the
@@ -62,6 +66,23 @@ code-question-agent <query> [flags]
   until `status.indexing` goes false or `--timeout` is hit.
 - `--timeout <ms>` (default `120000`) — deadline for both waiting on cold-start indexing and
   waiting for a freshly spawned daemon to start listening.
+
+**Diagnostics**
+
+- `-v` / `--verbose[=tags]` — print progress/diagnostic lines to stderr
+  (`createVerboseLogger`, `src/verbose.ts`). A bare `-v` (or `--verbose`) enables every tag;
+  `-v=<tags>` — comma-separated, also accepted as `-v<tags>` (no `=`) or `--verbose=<tags>` —
+  scopes it to just those. Parsed by hand in `extractVerboseFlag` (`src/args.ts`) before
+  `parseArgs` sees the rest of `argv`, since `parseArgs` has no "optional value" option type
+  and would otherwise reject a bare `-v`.
+  - `scan` — cold-start indexing progress: `waitForIndexing` (`src/connection.ts`) prints
+    `[scan] indexing… <filesIndexed>/<filesTotal> files` each time the daemon's `status`
+    response changes, instead of the plain one-time `indexing…` notice. This is the tag `-v`
+    enables with no arguments, so a bare `-v` is guaranteed to show cold-start scan progress.
+  - `daemon` — daemon lifecycle: logs spawning a new daemon, it starting to listen, or
+    connecting to one already running.
+- `--help` / `-h` — print usage and exit. Short-circuits before `<query>` is required and
+  before any daemon contact, so it works without `TSC_LSP_PATH` set.
 
 ## Human output format
 

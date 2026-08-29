@@ -10,6 +10,7 @@ import {
 } from "@code-question-agent/daemon";
 import { type MessageConnection } from "vscode-jsonrpc/node";
 import { type CliOptions } from "./args.ts";
+import { createVerboseLogger } from "./verbose.ts";
 
 const POLL_INTERVAL_MS = 150;
 
@@ -58,18 +59,31 @@ export interface DaemonConnection {
 
 /** Connects to the daemon for `repoRoot`, spawning it first if nothing is listening yet. */
 export async function ensureDaemon(repoRoot: string, opts: CliOptions): Promise<DaemonConnection> {
+  const logger = createVerboseLogger(opts);
   const paths = await resolveRepoPaths(repoRoot, process.env.CODE_QUESTION_AGENT_DATA_DIR);
 
-  if (!(await isAddressLive(paths.ipcAddress))) {
+  if (await isAddressLive(paths.ipcAddress)) {
+    logger.log("daemon", `connected to existing daemon at ${paths.ipcAddress}`);
+  } else {
+    logger.log("daemon", `spawning daemon for ${paths.repoRoot}`);
     spawnDaemon(paths.repoRoot);
     await waitUntilLive(paths.ipcAddress, opts.timeoutMs);
+    logger.log("daemon", `daemon listening at ${paths.ipcAddress}`);
   }
 
   const connection = await connectIpc(paths.ipcAddress);
   return { connection, paths };
 }
 
-/** Polls `status` until the cold-start index finishes, printing a one-time notice while it waits. */
+function formatScanProgress(status: StatusResult): string | undefined {
+  if (status.filesTotal === undefined) return undefined;
+  return `indexing… ${status.filesIndexed ?? 0}/${status.filesTotal} files`;
+}
+
+/**
+ * Polls `status` until the cold-start index finishes. Without `-v`'s `scan` tag, prints a
+ * one-time "indexing…" notice; with it, prints the file-count progress as it changes.
+ */
 export async function waitForIndexing(
   connection: MessageConnection,
   opts: CliOptions,
@@ -79,14 +93,27 @@ export async function waitForIndexing(
   let status = await connection.sendRequest<StatusResult>(REQUEST_STATUS);
   if (!status.indexing) return;
 
-  console.error("indexing…");
+  const logger = createVerboseLogger(opts);
+  const showScanProgress = logger.isEnabled("scan");
+  if (!showScanProgress) console.error("indexing…");
+
+  let lastReported: number | undefined;
   const deadline = Date.now() + opts.timeoutMs;
   while (status.indexing) {
+    if (showScanProgress && status.filesIndexed !== lastReported) {
+      const progress = formatScanProgress(status);
+      if (progress) logger.log("scan", progress);
+      lastReported = status.filesIndexed;
+    }
     if (Date.now() > deadline) {
       console.error("still indexing after the timeout — answering from the index as it stands.");
       return;
     }
     await sleep(POLL_INTERVAL_MS);
     status = await connection.sendRequest<StatusResult>(REQUEST_STATUS);
+  }
+  if (showScanProgress) {
+    const progress = formatScanProgress(status);
+    if (progress) logger.log("scan", progress);
   }
 }
