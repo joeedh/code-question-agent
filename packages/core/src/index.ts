@@ -7,9 +7,9 @@ export interface Report<TYPE extends string = string> {
 
 export interface QueryBase<TYPE extends string = string> {
   type: TYPE;
-  /** Regexp tested against the filesystem path of a matching symbol's declaring file; the symbol is kept only if it matches. */
+  /** Regexp tested against the filesystem path of a matching symbol's declaring file (and, for `WhatRefs`, each reference's own file); kept only if it matches. */
   fileInclude?: string;
-  /** Regexp tested against the filesystem path of a matching symbol's declaring file; the symbol is dropped if it matches. */
+  /** Regexp tested against the filesystem path of a matching symbol's declaring file (and, for `WhatRefs`, each reference's own file); dropped if it matches. */
   fileExclude?: string;
 }
 

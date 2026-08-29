@@ -34,12 +34,37 @@ See also: [`docs/cli.md`](cli.md) for the client side,
    checkpoint was captured; the cold-start scan (next step) or the watcher's own events
    pick those up.
 4. Spawn the LSP bridge (`LspBridge`, needs `tscPath`) and `initialize()` it.
-5. Start the cold-start index in the background (`listTrackedFiles` → `indexer.indexFile`
-   per file) — `status.indexing` stays `true` until it finishes; queries answer from
-   whatever's indexed so far in the meantime.
-6. Start the file watcher (`watchRepo`) — feeds `indexer.indexFile`/`removeFile` and the
-   checkpoint capture.
-7. Start the IPC server, then write `daemon.json`.
+5. Load the project file filter (`loadProjectFileFilter`, see below).
+6. Start the cold-start index in the background (`listTrackedFiles` → filter →
+   `indexer.indexFile` per file) — `status.indexing` stays `true` until it finishes; queries
+   answer from whatever's indexed so far in the meantime.
+7. Start the file watcher (`watchRepo`) — feeds `indexer.indexFile`/`removeFile` (through the
+   same filter) and the checkpoint capture.
+8. Start the IPC server, then write `daemon.json`.
+
+## Project file filtering (`src/tsconfig.ts`)
+
+`listTrackedFiles` reports every git-tracked/untracked-but-not-ignored file, with no
+extension or project-scope filtering — on a repo that checks in build output (bundles,
+generated docs, etc.), that indexes the bundles right alongside the real source.
+`loadProjectFileFilter(repoRoot)` narrows both the cold-start scan and the watcher's
+`onFileChanged`/`onFileRemoved` callbacks to what the repo's own `tsconfig.json` considers
+project source:
+
+- No root `tsconfig.json` → `isProjectFile` accepts everything (today's behavior, unchanged).
+- A root `tsconfig.json` that fails to parse (`jsonc-parser`) or isn't a JSON object →
+  accepts everything, the same as having none.
+- Otherwise, matches the file's repo-relative path against `include`/`files` (`picomatch`)
+  and rejects anything `exclude` matches, plus `**/node_modules/**` unconditionally even if
+  `exclude` doesn't list it. A bare directory name in `include`/`exclude` (no `*`/`?`) is
+  treated as `<name>/**/*`, matching TypeScript's own behavior for such an entry.
+- Deliberately lightweight, not a `tsconfig.json` reimplementation: reads only the root
+  config (no `extends` merging, no project-reference traversal — this tool already assumes
+  one repo maps to one `LspBridge` rootDir), and doesn't replicate every TypeScript-specific
+  default (implicit per-extension matching, automatic `outDir` exclusion beyond what
+  `exclude` already lists). `package.json`'s `exports` field is not consulted — it names
+  what a package publishes, not what its own tsconfig treats as project source, and can
+  point at the same build output this filter exists to keep out.
 
 ## IPC protocol (`src/protocol.ts`, `src/ipc.ts`)
 
@@ -69,15 +94,17 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
   - `SearchQuery`: `name = <query>` or, with `useRegExp`, a SQLite `REGEXP` clause.
   - `SymbolQuery`: `name = <symbol>`, optionally narrowed by exact `file`/`def_line`/`def_col`
     (how a caller disambiguates two same-named symbols by declaration position).
-  - `fileInclude`/`fileExclude` are applied last, in JS, against the filesystem path
-    (`fromFileUri` on the stored `file://` URI) — not as SQL, because a user writes a pattern
-    against a path, not the percent-encoded, lowercase-drive-letter URI the server returns.
-    They scope by **declaring file only**: `--what-refs`/`enclosing-scope` inherit the filter
-    for free since both resolve their symbol through this same function, so filtering never
-    touches individual reference locations.
+  - `fileInclude`/`fileExclude` are applied last, in JS (`passesFileFilters`), against the
+    filesystem path (`fromFileUri` on the stored `file://` URI) — not as SQL, because a user
+    writes a pattern against a path, not the percent-encoded, lowercase-drive-letter URI the
+    server returns. Scopes by **declaring file**: `enclosing-scope` inherits the filter for
+    free since it resolves its symbol through this same function.
 - `symbolLookup` → `SymbolInfo` — every row `resolveSymbols` returns.
 - `whatRefs` → `WhatRefs` — resolves to exactly one symbol (`resolveOneSymbol`, throws
-  `no symbol matched this query` if zero or ambiguous), then every `occurrences` row for it.
+  `no symbol matched this query` if zero or ambiguous), then every `occurrences` row for it,
+  applying `passesFileFilters` a second time to each occurrence's own file — so `fileInclude`/
+  `fileExclude` narrow both which symbol's references are answered and which of that symbol's
+  reference locations are kept.
 - `enclosingScope` → `EnclosingScope` — resolves one symbol, then walks `edges.kind =
   'contains'` upward via a recursive CTE, nearest scope first, empty `trace` at script root.
 

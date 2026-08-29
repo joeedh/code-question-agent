@@ -13,8 +13,13 @@
     "@code-question-agent/db": "workspace:*",
     "@code-question-agent/lsp-bridge": "workspace:*",
     "chokidar": "^4.0.3",
+    "jsonc-parser": "^3.3.1",
     "kysely": "^0.28.7",
+    "picomatch": "^4.0.7",
     "vscode-jsonrpc": "^9.0.2",
     "vscode-languageserver-protocol": "^3.18.3"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^4.0.3"
   }
 }

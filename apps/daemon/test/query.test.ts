@@ -98,4 +98,29 @@ describe("file-scoped queries (--include/--exclude)", () => {
       whatRefs(db, { type: "symbol-query", symbol: "greet", fileInclude: "nowhere" }),
     ).rejects.toThrow(/no symbol matched/);
   });
+
+  it("what-refs also filters each reference by its own file, not just the declaring symbol's", async () => {
+    const symbolRow = await db
+      .selectFrom("symbols")
+      .select("id")
+      .where("file", "=", srcUri)
+      .executeTakeFirstOrThrow();
+    const symbolId = symbolRow.id;
+    await db
+      .insertInto("occurrences")
+      .values([
+        { symbol_id: symbolId, file: srcUri, line: 5, col: 0, end_line: 5, end_col: 5, kind: "call" },
+        { symbol_id: symbolId, file: testUri, line: 9, col: 0, end_line: 9, end_col: 5, kind: "call" },
+      ])
+      .execute();
+
+    const report = await whatRefs(db, {
+      type: "symbol-query",
+      symbol: "greet",
+      file: srcUri,
+      fileExclude: "[\\\\/]test[\\\\/]",
+    });
+    expect(report.references).toHaveLength(1);
+    expect(report.references[0]?.file).toBe(srcUri);
+  });
 });

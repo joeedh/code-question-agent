@@ -9,6 +9,7 @@ import { startIpcServer } from "./ipc.ts";
 import { type DaemonMetadata, type QueryRequest } from "./protocol.ts";
 import { enclosingScope, symbolLookup, whatRefs } from "./query.ts";
 import { resolveRepoPaths } from "./repo.ts";
+import { loadProjectFileFilter } from "./tsconfig.ts";
 import { listTrackedFiles, watchRepo } from "./watcher.ts";
 
 export { startIpcServer, connectIpc, isAddressLive } from "./ipc.ts";
@@ -64,13 +65,14 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
   await bridge.initialize();
 
   const indexer = createIndexer(db, bridge);
+  const projectFiles = loadProjectFileFilter(paths.repoRoot);
   const startedAt = new Date().toISOString();
   let indexing = true;
   let filesIndexed = 0;
   let filesTotal: number | undefined;
 
   const coldIndex = (async () => {
-    const files = await listTrackedFiles(paths.repoRoot);
+    const files = (await listTrackedFiles(paths.repoRoot)).filter(projectFiles.isProjectFile);
     filesTotal = files.length;
     for (const file of files) {
       await indexer.indexFile(file).catch(() => undefined);
@@ -80,8 +82,14 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
   })();
 
   const watcher = watchRepo(paths.repoRoot, {
-    onFileChanged: (file) => void indexer.indexFile(file).catch(() => undefined),
-    onFileRemoved: (file) => void indexer.removeFile(file).catch(() => undefined),
+    onFileChanged: (file) => {
+      if (!projectFiles.isProjectFile(file)) return;
+      void indexer.indexFile(file).catch(() => undefined);
+    },
+    onFileRemoved: (file) => {
+      if (!projectFiles.isProjectFile(file)) return;
+      void indexer.removeFile(file).catch(() => undefined);
+    },
     onReflogChanged: () => void checkpoints.captureCurrent().catch(() => undefined),
   });
 

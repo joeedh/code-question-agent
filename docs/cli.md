@@ -29,12 +29,14 @@ code-question-agent <query> [flags]
   URI). `SymbolQuery` only.
 - `--line <n>` / `--col <n>` — disambiguate by declaration position (0-indexed, matching the
   LSP convention the daemon stores). `SymbolQuery` only.
-- `--include <regexp>` / `--exclude <regexp>` — narrow by declaring file, tested against the
-  filesystem path (not the raw URI). Keep a symbol only if `--include` matches and
-  `--exclude` doesn't. Applies to `SymbolQuery` and `SearchQuery` alike, and to `--what-refs`
-  (it narrows which declaration the references are for, not the reference locations
-  themselves). A malformed pattern throws immediately, before any daemon contact, as
-  `--include: <reason>` / `--exclude: <reason>`.
+- `--include <regexp>` / `--exclude <regexp>` — narrow by file, tested against the
+  filesystem path (not the raw URI). Keep a result only if `--include` matches and
+  `--exclude` doesn't. Applies to a symbol's declaring file for `SymbolQuery`/`SearchQuery`;
+  for `--what-refs`, applied twice — once to pick which symbol's references to answer with
+  (its declaring file), and again to each reference's own file, so a reference outside the
+  pattern is dropped even when the symbol it refers to is declared inside it. Does not filter
+  `--include-class-trace`'s scope trace. A malformed pattern throws immediately, before any
+  daemon contact, as `--include: <reason>` / `--exclude: <reason>`.
 
 **What kind of answer**
 

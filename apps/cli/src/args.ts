@@ -162,8 +162,9 @@ What to look up:
                              exclusive with <query>.
   --file <path>             Disambiguate by declaring file (SymbolQuery only).
   --line <n>, --col <n>     Disambiguate by declaration position, 0-indexed (SymbolQuery only).
-  --include <regexp>        Keep only symbols whose declaring file matches.
-  --exclude <regexp>        Drop symbols whose declaring file matches.
+  --include <regexp>        Keep only results whose file matches (declaring file, or with
+                             --what-refs also each reference's own file).
+  --exclude <regexp>        Drop results whose file matches (same scope as --include).
 
 What kind of answer:
   --what-refs               Answer with references to the matching symbol instead of its

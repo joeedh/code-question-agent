@@ -43,9 +43,11 @@ function toResolvedSymbol(row: SymbolRow): ResolvedSymbol {
 
 /**
  * `fileInclude`/`fileExclude` (`packages/core`'s `QueryBase`) are tested against the
- * filesystem path, not the raw `file://` URI `symbols.file` stores — a user writes a pattern
- * against a path, not against the percent-encoded, lowercase-drive-letter URI the server
- * returns (`docs/debugging.md`'s "File URIs lowercase the drive letter" note).
+ * filesystem path, not the raw `file://` URI `symbols.file`/`occurrences.file` stores — a
+ * user writes a pattern against a path, not against the percent-encoded, lowercase-drive-letter
+ * URI the server returns (`docs/debugging.md`'s "File URIs lowercase the drive letter" note).
+ * Shared between a symbol's declaring file (`resolveSymbols`) and a reference's own location
+ * (`whatRefs`) — the same pair of flags narrows both.
  */
 function passesFileFilters(file: string, query: Query): boolean {
   if (!query.fileInclude && !query.fileExclude) return true;
@@ -59,8 +61,9 @@ function passesFileFilters(file: string, query: Query): boolean {
  * Resolves a `Query` to the `symbols` rows it names. `SymbolQuery.line`/`.col`, when given,
  * are treated as the symbol's declaration position (what a prior `documentSymbol` scan would
  * have reported), the way a caller disambiguates between two same-named symbols.
- * `fileInclude`/`fileExclude` narrow by the declaring file — `whatRefs`/`enclosingScope`
- * inherit this for free since they resolve their symbol through this same function.
+ * `fileInclude`/`fileExclude` narrow by the declaring file — `enclosingScope` inherits this
+ * for free since it resolves its symbol through this same function, and `whatRefs` applies
+ * the same pair of filters a second time to each reference's own location.
  */
 export async function resolveSymbols(
   db: Kysely<Database>,
@@ -111,11 +114,9 @@ async function resolveOneSymbol(db: Kysely<Database>, query: Query): Promise<Res
 
 export async function whatRefs(db: Kysely<Database>, query: Query): Promise<WhatRefs> {
   const symbol = await resolveOneSymbol(db, query);
-  const rows = await db
-    .selectFrom("occurrences")
-    .selectAll()
-    .where("symbol_id", "=", symbol.id)
-    .execute();
+  const rows = (
+    await db.selectFrom("occurrences").selectAll().where("symbol_id", "=", symbol.id).execute()
+  ).filter((row) => passesFileFilters(row.file, query));
   const references: Occurrence[] = rows.map((row) => ({
     file: row.file,
     line: row.line,
