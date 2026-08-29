@@ -5,7 +5,7 @@
   standard `tsc` inside the `typescript` package; `tsgo` refers only to the
   bleeding-edge nightly channel). This is currently the latest TypeScript.
 - **Bundler:** `pnpm build` runs esbuild.
-- **Formatter:** `pnpm format` runs @pathtx/prettier`.
+- **Formatter:** `pnpm format` runs `@pathtx/prettier`.
 - **Linter:** `pnpm lint` runs both eslint and commentlint.
 - **Package Manager**: pnpm
 - **Typechecking**: `pnpm typecheck`
@@ -19,6 +19,20 @@
 - Keep a running debugging guide in `docs/debugging.md`. Add a lesson there whenever a bug
   turns out to have a non-obvious cause, so the next debugging session starts from what was
   already learned.
+- The overall design lives in [`docs/initialDesign.md`](docs/initialDesign.md); the plan
+  sequence lives in [`docs/initialTaskList.md`](docs/initialTaskList.md).
+
+# Packages
+
+Workspace packages live under `packages/`; runnable apps (the daemon, the CLI) will live
+under `apps/` once plan 3 and plan 4 add them. Keep this list current as packages are added,
+renamed, or removed.
+
+- `@code-question-agent/core` — shared types (`Query`, `Report`, and friends) used across the
+  rest of the workspace.
+- `@code-question-agent/lsp-bridge` — spawns TypeScript's native LSP server and speaks LSP to
+  it (handshake, requests); see
+  [plan 1](docs/plans/01-build-system-and-lsp-bridge.md).
 
 # Commentlint
 
