@@ -203,3 +203,16 @@ duplicating them. Without a `"types"` field, this failed the exact way `packages
 the same one: add `"types": "./dist/index.d.ts"` to `apps/daemon/package.json` and a
 `tsconfig.declare.json` mirroring `packages/db`'s, so `declareMember` actually runs a
 declaration build for it.
+
+### `spawn(..., { detached: true })` pops a console window on Windows unless `windowsHide` is set too
+
+`apps/cli/src/connection.ts`'s `spawnDaemon` spawns the daemon `detached` so it outlives the
+CLI invocation — correct for keeping it alive, but on Windows a detached child gets its own
+console window by default (Node's documented behavior, not a bug in the child itself). Every
+CLI invocation that cold-spawns a daemon — including each `apps/cli/test/cli.test.ts` case —
+flashed a visible window during a test run. The fix is `windowsHide: true` alongside
+`detached: true` in the same `spawn()` call; it only suppresses the window, it doesn't affect
+`detached`'s process-survival behavior. Worth checking any future `detached: true` spawn in
+this codebase for the same pairing — `apps/daemon/test/daemon.test.ts`'s daemon-subprocess
+spawn and `apps/daemon/src/watcher.ts`'s `git` spawns don't need it, since neither sets
+`detached`.

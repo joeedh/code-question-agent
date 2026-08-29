@@ -40,6 +40,9 @@ function spawnDaemon(repoRoot: string): void {
   const daemonEntry = fileURLToPath(import.meta.resolve("@code-question-agent/daemon"));
   const child = spawn(process.execPath, [daemonEntry, repoRoot], {
     detached: true,
+    // On Windows, a detached child otherwise gets its own console window — Node's documented
+    // behavior, not a bug in the child process itself.
+    windowsHide: true,
     stdio: "ignore",
     env: { ...process.env, TSC_LSP_PATH: tscPath },
   });
