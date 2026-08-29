@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
 import { skipPath, filterCode } from "../config.ts";
+import { fileCache } from "../utils.ts";
 
 const MAX_LINES = 2000;
 
@@ -33,11 +34,18 @@ export const readTool: Tool = {
       endLine?: number;
     };
     const filePath = resolveWorkspacePath(ctx.workspaceDir, relPath);
-    if (skipPath(filePath)) { 
+    if (skipPath(filePath)) {
       return truncateResult("[Error: reading markdown files is disabled for this sessons]");
     }
-    
-    const raw = await readFile(filePath, "utf8");
+
+    let raw: string;
+    if (fileCache.has(filePath)) {
+      raw = fileCache.get(filePath)!;
+    } else {
+      raw = await readFile(filePath, "utf8");
+      fileCache.set(filePath, raw);
+    }
+
     const allLines = filterCode(raw, filePath).split("\n");
     const start = Math.max(1, startLine ?? 1);
     const requestedEnd = Math.min(allLines.length, endLine ?? allLines.length);

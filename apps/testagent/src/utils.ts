@@ -107,3 +107,5 @@ c //
     stripComments(test, "a.ts").split("\n").length,
   );
 }
+
+export const fileCache = new Map<string, string>();

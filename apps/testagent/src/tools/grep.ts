@@ -3,11 +3,13 @@ import path from "node:path";
 import { IGNORED_DIR_NAMES, resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
 import type { TestAgentConfig } from "../config.ts";
 import { skipPath, filterCode } from "../config.ts";
-import child_process from "node:child_process";
+import { fileCache } from "../utils.ts";
 
 const MAX_CONTEXT_LINES = 25;
 
 let grepConfig = [] as RegExp[];
+
+const dirCache = new Map<string, { name: string; isDirectory: boolean; isFile: boolean }[]>();
 
 function globToRe(glob: string) {
   glob = glob
@@ -24,8 +26,22 @@ export function loadGrepConfig(config: TestAgentConfig) {
   grepConfig = (config.grepExclude ?? []).map((s) => new RegExp(globToRe(s)));
 }
 
+async function readdirWithCache(dir: string) {
+  if (dirCache.has(dir)) {
+    return dirCache.get(dir)!;
+  }
+  const result = await readdir(dir, { withFileTypes: true });
+  dirCache.set(
+    dir,
+    result.map((entry) => {
+      return { name: entry.name, isDirectory: entry.isDirectory(), isFile: entry.isFile() };
+    }),
+  );
+  return dirCache.get(dir)!;
+}
+
 async function collectFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
+  const entries = await readdirWithCache(dir);
   const files: string[] = [];
   for (const entry of entries) {
     if (IGNORED_DIR_NAMES.has(entry.name)) continue;
@@ -34,10 +50,10 @@ async function collectFiles(dir: string): Promise<string[]> {
     if (grepConfig.find((g) => g.test(full.replace(/\\/g, "/")))) {
       continue;
     }
-    
-    if (entry.isDirectory()) {
+
+    if (entry.isDirectory) {
       files.push(...(await collectFiles(full)));
-    } else if (entry.isFile() && !skipPath(entry.name)) {
+    } else if (entry.isFile && !skipPath(entry.name)) {
       files.push(full);
     }
   }
@@ -85,21 +101,29 @@ export const grepTool: Tool = {
     };
     const context = Math.max(0, Math.min(MAX_CONTEXT_LINES, contextLines ?? 0));
     const regexp = new RegExp(pattern);
-    const root = resolveWorkspacePath(ctx.workspaceDir, relPath ?? ".");
     
+    const root = resolveWorkspacePath(ctx.workspaceDir, relPath ?? ".");
+
     const stat = await readdir(root, { withFileTypes: true }).catch(() => undefined);
     const files = stat !== undefined ? await collectFiles(root) : [root];
 
     const matches: Match[] = [];
     for (const file of files) {
       let content: string;
-      try {
-        content = await readFile(file, "utf8");
-      } catch {
-        continue;
+
+      if (fileCache.has(file)) {
+        content = fileCache.get(file)!;
+      } else {
+        try {
+          content = await readFile(file, "utf8");
+        } catch {
+          console.log('read error', file)
+          continue;
+        }
+        content = filterCode(content, file);
+        fileCache.set(file, content);
       }
-      content = filterCode(content, file);
-      
+
       const lines = content.split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (regexp.test(lines[i]!)) {
@@ -116,18 +140,16 @@ export const grepTool: Tool = {
     }
 
     if (matches.length === 0) return "no matches";
-    let lastfile = ''
+    let lastfile = "";
 
     const blocks = matches.map((match) => {
-      let body = match.lines
-        .map((line, i) => `  ${match.contextStart + i}: ${line}`)
-        .join("\n");
+      let body = match.lines.map((line, i) => `  ${match.contextStart + i}: ${line}`).join("\n");
       if (lastfile !== match.file) {
-        lastfile = match.file
-        body = `\n${match.file}:\n${body}`
+        lastfile = match.file;
+        body = `\n${match.file}:\n${body}`;
       }
       return body;
     });
-    return truncateResult(blocks.join("\n")) 
+    return truncateResult(blocks.join("\n"));
   },
 };
