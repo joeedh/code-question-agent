@@ -6,9 +6,23 @@ import { type CliOptions } from "./args.ts";
 /** Maps `CliOptions` onto a `packages/core` `Query` — a regexp search or an exact symbol lookup. */
 export function buildQuery(opts: CliOptions): Query {
   if (opts.regexp) {
-    return { type: "search-query", query: opts.query, useRegExp: true };
+    return {
+      type: "search-query",
+      query: opts.query,
+      useRegExp: true,
+      fileInclude: opts.fileInclude,
+      fileExclude: opts.fileExclude,
+    };
   }
-  return { type: "symbol-query", symbol: opts.query, file: opts.file, line: opts.line, col: opts.col };
+  return {
+    type: "symbol-query",
+    symbol: opts.query,
+    file: opts.file,
+    line: opts.line,
+    col: opts.col,
+    fileInclude: opts.fileInclude,
+    fileExclude: opts.fileExclude,
+  };
 }
 
 export interface QueryResult {

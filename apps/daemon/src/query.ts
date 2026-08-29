@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { type Database } from "@code-question-agent/db";
+import { fromFileUri } from "@code-question-agent/lsp-bridge";
 import { type Kysely, sql } from "kysely";
 import type {
   EnclosingScope,
@@ -41,9 +42,25 @@ function toResolvedSymbol(row: SymbolRow): ResolvedSymbol {
 }
 
 /**
+ * `fileInclude`/`fileExclude` (`packages/core`'s `QueryBase`) are tested against the
+ * filesystem path, not the raw `file://` URI `symbols.file` stores — a user writes a pattern
+ * against a path, not against the percent-encoded, lowercase-drive-letter URI the server
+ * returns (`docs/debugging.md`'s "File URIs lowercase the drive letter" note).
+ */
+function passesFileFilters(file: string, query: Query): boolean {
+  if (!query.fileInclude && !query.fileExclude) return true;
+  const fsPath = fromFileUri(file);
+  if (query.fileInclude && !new RegExp(query.fileInclude).test(fsPath)) return false;
+  if (query.fileExclude && new RegExp(query.fileExclude).test(fsPath)) return false;
+  return true;
+}
+
+/**
  * Resolves a `Query` to the `symbols` rows it names. `SymbolQuery.line`/`.col`, when given,
  * are treated as the symbol's declaration position (what a prior `documentSymbol` scan would
  * have reported), the way a caller disambiguates between two same-named symbols.
+ * `fileInclude`/`fileExclude` narrow by the declaring file — `whatRefs`/`enclosingScope`
+ * inherit this for free since they resolve their symbol through this same function.
  */
 export async function resolveSymbols(db: Kysely<Database>, query: Query): Promise<ResolvedSymbol[]> {
   let builder = db.selectFrom("symbols").selectAll();
@@ -60,7 +77,7 @@ export async function resolveSymbols(db: Kysely<Database>, query: Query): Promis
     if (symbolQuery.col !== undefined) builder = builder.where("def_col", "=", symbolQuery.col);
   }
 
-  const rows = await builder.execute();
+  const rows = (await builder.execute()).filter((row) => passesFileFilters(row.file, query));
   return rows.map(toResolvedSymbol);
 }
 

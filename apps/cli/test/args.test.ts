@@ -18,6 +18,8 @@ describe("parseCliArgs", () => {
     expect(opts.file).toBeUndefined();
     expect(opts.line).toBeUndefined();
     expect(opts.col).toBeUndefined();
+    expect(opts.fileInclude).toBeUndefined();
+    expect(opts.fileExclude).toBeUndefined();
   });
 
   it("parses every flag", () => {
@@ -32,6 +34,10 @@ describe("parseCliArgs", () => {
       "3",
       "--col",
       "7",
+      "--include",
+      "[\\\\/]src[\\\\/]",
+      "--exclude",
+      "[\\\\/]test[\\\\/]",
       "--context-lines",
       "2",
       "--exclude-column",
@@ -50,6 +56,8 @@ describe("parseCliArgs", () => {
       file: "src/greeter.ts",
       line: 3,
       col: 7,
+      fileInclude: "[\\\\/]src[\\\\/]",
+      fileExclude: "[\\\\/]test[\\\\/]",
       contextLines: 2,
       includeLine: true,
       excludeColumn: true,
@@ -66,5 +74,13 @@ describe("parseCliArgs", () => {
 
   it("throws a clear error on a non-numeric --line", () => {
     expect(() => parseCliArgs(["greet", "--line", "nope"])).toThrow(/--line/);
+  });
+
+  it("throws a clear error on a malformed --include regexp", () => {
+    expect(() => parseCliArgs(["greet", "--include", "(unclosed"])).toThrow(/--include/);
+  });
+
+  it("throws a clear error on a malformed --exclude regexp", () => {
+    expect(() => parseCliArgs(["greet", "--exclude", "["])).toThrow(/--exclude/);
   });
 });

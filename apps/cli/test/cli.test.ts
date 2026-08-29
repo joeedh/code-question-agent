@@ -100,4 +100,34 @@ describe.skipIf(!tscPath)("cli, end to end", () => {
     expect(stdout).toContain("greet.ts");
     expect(stdout).toContain("definition");
   }, 60_000);
+
+  it("--include/--exclude narrow a multi-file symbol match to one declaring file", async () => {
+    // An exact-name lookup for `greet` matches two rows without a filter: the declaration in
+    // `greet.ts` and the imported binding `caller.ts`'s own `documentSymbol` scan also reports
+    // (`docs/debugging.md`'s "Hierarchical documentSymbol reports a named import as a symbol
+    // too" note).
+    const unfiltered = await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir, "--json"], {
+      env,
+    });
+    const unfilteredReport = JSON.parse(unfiltered.stdout) as SymbolInfo;
+    expect(unfilteredReport.symbols.length).toBeGreaterThanOrEqual(2);
+
+    const included = await execFileAsync(
+      process.execPath,
+      [cliEntry, "greet", "--repo", repoDir, "--include", "greet\\.ts$", "--json"],
+      { env },
+    );
+    const includedReport = JSON.parse(included.stdout) as SymbolInfo;
+    expect(includedReport.symbols).toHaveLength(1);
+    expect(includedReport.symbols[0]?.file).toMatch(/greet\.ts$/);
+
+    const excluded = await execFileAsync(
+      process.execPath,
+      [cliEntry, "greet", "--repo", repoDir, "--exclude", "caller\\.ts$", "--json"],
+      { env },
+    );
+    const excludedReport = JSON.parse(excluded.stdout) as SymbolInfo;
+    expect(excludedReport.symbols).toHaveLength(1);
+    expect(excludedReport.symbols[0]?.file).toMatch(/greet\.ts$/);
+  }, 60_000);
 });

@@ -8,6 +8,8 @@ export interface CliOptions {
   file?: string;
   line?: number;
   col?: number;
+  fileInclude?: string;
+  fileExclude?: string;
   contextLines: number;
   includeLine: boolean;
   excludeColumn: boolean;
@@ -26,6 +28,17 @@ function parseIntFlag(name: string, value: string | undefined): number | undefin
   return parsed;
 }
 
+function parseRegExpFlag(name: string, value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  try {
+    new RegExp(value);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`--${name}: ${reason}`, { cause: error });
+  }
+  return value;
+}
+
 /** Parses `argv` (excluding `node`/script) into `CliOptions`. Throws on a missing query or a malformed numeric flag. */
 export function parseCliArgs(argv: string[]): CliOptions {
   const { values, positionals } = parseArgs({
@@ -38,6 +51,8 @@ export function parseCliArgs(argv: string[]): CliOptions {
       file: { type: "string" },
       line: { type: "string" },
       col: { type: "string" },
+      include: { type: "string" },
+      exclude: { type: "string" },
       "context-lines": { type: "string" },
       "include-line": { type: "boolean", default: true },
       "exclude-column": { type: "boolean", default: false },
@@ -59,6 +74,8 @@ export function parseCliArgs(argv: string[]): CliOptions {
     file: values.file,
     line: parseIntFlag("line", values.line),
     col: parseIntFlag("col", values.col),
+    fileInclude: parseRegExpFlag("include", values.include),
+    fileExclude: parseRegExpFlag("exclude", values.exclude),
     contextLines: parseIntFlag("context-lines", values["context-lines"]) ?? 0,
     includeLine: values["include-line"],
     excludeColumn: values["exclude-column"],

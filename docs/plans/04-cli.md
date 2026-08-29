@@ -94,6 +94,33 @@ purely a presentation-layer concern in `apps/cli/src/format.ts`, not a change to
 and glob-scoped positional file arguments from `ideas.md`'s example stay out of scope — carried
 forward as open questions, same as plan 3's `extends`/`implements`-edge deferral.
 
+### Addendum: `--include`/`--exclude` regexp file filters, scoped to a symbol's declaring file
+
+Added after the initial plan-4 implementation, in response to a direct request: narrow a query
+by path, e.g. "only `greet` declared under `src/`, not `test/`." Confirmed with the user that
+the filter applies to where a symbol is *declared*, not to each individual reference's file —
+so `--what-refs --include 'src/'` means "references to whichever matching symbol is declared
+under `src/`," not "references that themselves live under `src/`."
+
+`fileInclude?`/`fileExclude?` live on `packages/core`'s `QueryBase` (shared by both `Query`
+variants). `apps/daemon/src/query.ts`'s `resolveSymbols` applies them in JS, right after the DB
+fetch and before mapping to `ResolvedSymbol[]` — converting each row's `file` (a `file://` URI)
+to a filesystem path via `fromFileUri` (`@code-question-agent/lsp-bridge`) and testing a plain
+`new RegExp(pattern)` against it, rather than pushing a `REGEXP` clause into SQL, since a user
+writes a pattern against a path, not the percent-encoded, lowercase-drive-letter URI the server
+returns. `whatRefs`/`enclosingScope` inherit the filter for free, since both resolve their
+symbol through this same function. A row survives when `fileInclude` (unset or matching) AND
+`fileExclude` (unset or not matching) — the conventional include/exclude combination.
+
+`apps/cli/src/args.ts` validates `--include`/`--exclude` at parse time
+(`new RegExp(value)`, rethrown as a clear `--include: ...`/`--exclude: ...` message on a
+`SyntaxError`) rather than letting a malformed pattern reach the daemon as an opaque exception.
+`apps/cli/src/query.ts`'s `buildQuery` copies both onto whichever `Query` variant it builds.
+
+Repeatable/multiple `--include`/`--exclude` patterns (OR-combined) and an occurrence-level
+filter (scoping references by file independent of the declaring symbol) were both considered
+and explicitly deferred — a single pattern per side covers the request as given.
+
 ## New app: `apps/cli`
 
 - **`src/args.ts`** — `parseCliArgs(argv)` wrapping `node:util`'s `parseArgs`, returning a typed
