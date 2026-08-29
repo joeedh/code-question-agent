@@ -28,7 +28,7 @@ async function initFixtureRepo(repoDir: string): Promise<void> {
   await git(repoDir, ["config", "user.name", "Test"]);
   await writeFile(
     path.join(repoDir, "greet.ts"),
-    'export function greet(name: string): string {\n  return `hi ${name}`;\n}\n',
+    "export function greet(name: string): string {\n  return `hi ${name}`;\n}\n",
   );
   await writeFile(
     path.join(repoDir, "caller.ts"),
@@ -60,12 +60,18 @@ describe.skipIf(!tscPath)("cli, end to end", () => {
       // No daemon left running — nothing to shut down.
     }
     await Promise.all(
-      [repoDir, dataDir].map((dir) => rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })),
+      [repoDir, dataDir].map((dir) =>
+        rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }),
+      ),
     );
   }, 15_000);
 
   it("cold-spawns a daemon on the first query and reuses it on the second", async () => {
-    const first = await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir, "--json"], { env });
+    const first = await execFileAsync(
+      process.execPath,
+      [cliEntry, "greet", "--repo", repoDir, "--json"],
+      { env },
+    );
     const firstReport = JSON.parse(first.stdout) as SymbolInfo;
     expect(firstReport.symbols).toContainEqual(expect.objectContaining({ name: "greet" }));
 
@@ -74,7 +80,9 @@ describe.skipIf(!tscPath)("cli, end to end", () => {
     const statusAfterFirst = await statusConnection.sendRequest<StatusResult>(REQUEST_STATUS);
     statusConnection.dispose();
 
-    await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir, "--json"], { env });
+    await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir, "--json"], {
+      env,
+    });
 
     const statusConnection2 = await connectIpc(paths.ipcAddress);
     const statusAfterSecond = await statusConnection2.sendRequest<StatusResult>(REQUEST_STATUS);
@@ -96,7 +104,11 @@ describe.skipIf(!tscPath)("cli, end to end", () => {
   }, 60_000);
 
   it("prints the human-readable block format by default", async () => {
-    const { stdout } = await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir], { env });
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      [cliEntry, "greet", "--repo", repoDir],
+      { env },
+    );
     expect(stdout).toContain("greet.ts");
     expect(stdout).toContain("definition");
   }, 60_000);
@@ -106,9 +118,13 @@ describe.skipIf(!tscPath)("cli, end to end", () => {
     // `greet.ts` and the imported binding `caller.ts`'s own `documentSymbol` scan also reports
     // (`docs/debugging.md`'s "Hierarchical documentSymbol reports a named import as a symbol
     // too" note).
-    const unfiltered = await execFileAsync(process.execPath, [cliEntry, "greet", "--repo", repoDir, "--json"], {
-      env,
-    });
+    const unfiltered = await execFileAsync(
+      process.execPath,
+      [cliEntry, "greet", "--repo", repoDir, "--json"],
+      {
+        env,
+      },
+    );
     const unfilteredReport = JSON.parse(unfiltered.stdout) as SymbolInfo;
     expect(unfilteredReport.symbols.length).toBeGreaterThanOrEqual(2);
 

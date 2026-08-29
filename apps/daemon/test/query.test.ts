@@ -21,8 +21,24 @@ describe("file-scoped queries (--include/--exclude)", () => {
     await db
       .insertInto("symbols")
       .values([
-        { file: srcUri, kind: "12", name: "greet", def_line: 0, def_col: 0, def_end_line: 0, def_end_col: 5 },
-        { file: testUri, kind: "12", name: "greet", def_line: 0, def_col: 0, def_end_line: 0, def_end_col: 5 },
+        {
+          file: srcUri,
+          kind: "12",
+          name: "greet",
+          def_line: 0,
+          def_col: 0,
+          def_end_line: 0,
+          def_end_col: 5,
+        },
+        {
+          file: testUri,
+          kind: "12",
+          name: "greet",
+          def_line: 0,
+          def_col: 0,
+          def_end_line: 0,
+          def_end_col: 5,
+        },
       ])
       .execute();
   });
@@ -38,13 +54,21 @@ describe("file-scoped queries (--include/--exclude)", () => {
   });
 
   it("fileInclude narrows to the declaring file that matches", async () => {
-    const symbols = await resolveSymbols(db, { type: "symbol-query", symbol: "greet", fileInclude: "[\\\\/]src[\\\\/]" });
+    const symbols = await resolveSymbols(db, {
+      type: "symbol-query",
+      symbol: "greet",
+      fileInclude: "[\\\\/]src[\\\\/]",
+    });
     expect(symbols).toHaveLength(1);
     expect(symbols[0]?.file).toBe(srcUri);
   });
 
   it("fileExclude drops the declaring file that matches", async () => {
-    const symbols = await resolveSymbols(db, { type: "symbol-query", symbol: "greet", fileExclude: "[\\\\/]test[\\\\/]" });
+    const symbols = await resolveSymbols(db, {
+      type: "symbol-query",
+      symbol: "greet",
+      fileExclude: "[\\\\/]test[\\\\/]",
+    });
     expect(symbols).toHaveLength(1);
     expect(symbols[0]?.file).toBe(srcUri);
   });
@@ -61,13 +85,17 @@ describe("file-scoped queries (--include/--exclude)", () => {
   });
 
   it("a filter matching nothing empties the symbol-info result", async () => {
-    const report = await symbolLookup(db, { type: "symbol-query", symbol: "greet", fileInclude: "nowhere" });
+    const report = await symbolLookup(db, {
+      type: "symbol-query",
+      symbol: "greet",
+      fileInclude: "nowhere",
+    });
     expect(report.symbols).toEqual([]);
   });
 
   it("what-refs throws when the file filter eliminates the only match", async () => {
-    await expect(whatRefs(db, { type: "symbol-query", symbol: "greet", fileInclude: "nowhere" })).rejects.toThrow(
-      /no symbol matched/,
-    );
+    await expect(
+      whatRefs(db, { type: "symbol-query", symbol: "greet", fileInclude: "nowhere" }),
+    ).rejects.toThrow(/no symbol matched/);
   });
 });

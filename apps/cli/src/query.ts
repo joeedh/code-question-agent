@@ -1,4 +1,11 @@
-import { type EnclosingScope, type Query, type Report, type ResolvedSymbol, type SymbolInfo, type WhatRefs } from "@code-question-agent/core";
+import {
+  type EnclosingScope,
+  type Query,
+  type Report,
+  type ResolvedSymbol,
+  type SymbolInfo,
+  type WhatRefs,
+} from "@code-question-agent/core";
 import { REQUEST_QUERY, type QueryRequest } from "@code-question-agent/daemon";
 import { type MessageConnection } from "vscode-jsonrpc/node";
 import { type CliOptions } from "./args.ts";
@@ -35,21 +42,35 @@ export function resolvedSymbolsOf(report: SymbolInfo | WhatRefs): ResolvedSymbol
   return report.type === "what-refs" ? [report.symbol] : report.symbols;
 }
 
-async function fetchTrace(connection: MessageConnection, symbol: ResolvedSymbol): Promise<EnclosingScope> {
+async function fetchTrace(
+  connection: MessageConnection,
+  symbol: ResolvedSymbol,
+): Promise<EnclosingScope> {
   const request: QueryRequest = {
     report: "enclosing-scope",
-    query: { type: "symbol-query", symbol: symbol.name, file: symbol.file, line: symbol.line, col: symbol.col },
+    query: {
+      type: "symbol-query",
+      symbol: symbol.name,
+      file: symbol.file,
+      line: symbol.line,
+      col: symbol.col,
+    },
   };
   return connection.sendRequest<EnclosingScope>(REQUEST_QUERY, request);
 }
 
 /** Sends the primary query, then one `enclosing-scope` follow-up per resolved symbol when `--include-class-trace` was passed. */
-export async function runQuery(connection: MessageConnection, opts: CliOptions): Promise<QueryResult> {
+export async function runQuery(
+  connection: MessageConnection,
+  opts: CliOptions,
+): Promise<QueryResult> {
   const request: QueryRequest = {
     query: buildQuery(opts),
     report: opts.whatRefs ? "what-refs" : "symbol-info",
   };
-  const report = (await connection.sendRequest<Report>(REQUEST_QUERY, request)) as SymbolInfo | WhatRefs;
+  const report = (await connection.sendRequest<Report>(REQUEST_QUERY, request)) as
+    | SymbolInfo
+    | WhatRefs;
 
   const traces = new Map<number, EnclosingScope>();
   if (opts.includeClassTrace) {

@@ -170,10 +170,10 @@ before writing a from-scratch IPC address scheme, rather than after hitting the 
 
 In WAL mode, a committed write can still live only in the `-wal` file next to the main
 database file until a checkpoint operation folds it back in. `apps/daemon/src/checkpoints.ts`
-capturing a checkpoint from the *live*, open database uses `better-sqlite3`'s own
+capturing a checkpoint from the _live_, open database uses `better-sqlite3`'s own
 `.backup()` (`packages/db/src/open.ts`'s `backupDatabase`) rather than `fs.copyFile`, since
 `.backup()` goes through SQLite's online backup API and is safe against a concurrently-open
-connection. A plain file copy is still fine for *promoting* a checkpoint onto `live.sqlite`
+connection. A plain file copy is still fine for _promoting_ a checkpoint onto `live.sqlite`
 before anything has opened it — the risk is specific to copying out of an already-open DB.
 
 ## `apps/cli` (plan 4)
@@ -216,3 +216,28 @@ flashed a visible window during a test run. The fix is `windowsHide: true` along
 this codebase for the same pairing — `apps/daemon/test/daemon.test.ts`'s daemon-subprocess
 spawn and `apps/daemon/src/watcher.ts`'s `git` spawns don't need it, since neither sets
 `detached`.
+
+### Debouncing after a process spawn does not limit process spawns
+
+`watchRepo` called `filterIgnored` from each chokidar `add`/`change` handler and debounced the
+`onFileChanged` dispatch inside the callback. The debounce guarded `indexFile`, which is cheap,
+and left the `git check-ignore` spawn — one process per event — unguarded. Anything writing
+many files at once turned into that many concurrent `git` processes: a `pnpm install` or a
+build spawned thousands, and on a repo with `core.fsmonitor` enabled they raced to start a
+fsmonitor daemon, each losing the race and starting its own. That left 58 orphaned
+`git fsmonitor--daemon run --detach` processes on 2026-08-28, ~42 of them within one 12-second
+window and each with a different parent.
+
+Two things were wrong. Chokidar's `ignored` listed only `.git`, so `node_modules` churn raised
+events at all; `NEVER_WATCHED` now covers both. More importantly the ordering was backwards —
+coalesce into a batch first, then make one `filterIgnored` call for the whole batch, which is
+what its "one batched call" doc comment always described but no caller did. Serialize the
+flushes too, or a second batch starts while the first is still in flight.
+
+The general lesson: when a handler both spawns a process and debounces, check which one wraps
+the other. Look for the same shape in any per-event handler that shells out.
+
+Two diagnostics worth reusing. Group by subcommand to see what a `git.exe` pile actually is:
+`Get-CimInstance Win32_Process -Filter "Name='git.exe'" | Group-Object { ($_.CommandLine -split '\s+')[1..2] -join ' ' }`.
+Then sort by `CreationDate` — a tight burst of identical processes with distinct parents means
+a fan-out, whereas one parent means a loop.

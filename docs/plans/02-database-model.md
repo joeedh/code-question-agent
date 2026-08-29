@@ -41,13 +41,13 @@ that touches existing rows. No schema change needed to leave this open.
 file copy of a live DB (`initialDesign.md`), so self-describing beats a separate catalog:
 
 - Checkpoint files are named by their tree hash directly:
-  `<data-dir>/checkpoints/<tree-hash>.sqlite`. Listing the directory *is* the catalog — no
+  `<data-dir>/checkpoints/<tree-hash>.sqlite`. Listing the directory _is_ the catalog — no
   need to open every file to find candidates for the closest-match search.
 - LRU eviction reads the filesystem's own mtime (touched on access) rather than a DB row, so
   reading a checkpoint to seed a cold start never requires a write into that checkpoint file.
-- What *does* need a table, inside every DB (live or checkpoint): `file_state(file,
-  content_hash, mtime, size)`. Its job isn't checkpoint diffing (that's `git diff
-  --name-status` between tree hashes, per `initialDesign.md`) — it's reconciliation: when the
+- What _does_ need a table, inside every DB (live or checkpoint): `file_state(file,
+content_hash, mtime, size)`. Its job isn't checkpoint diffing (that's `git diff
+--name-status` between tree hashes, per `initialDesign.md`) — it's reconciliation: when the
   daemon (re)opens a live DB, the watcher hasn't been running while the process was down, so
   every indexed file's stored hash/mtime+size gets compared against disk to catch drift before
   the DB is trusted. This table is new relative to the research doc's schema; it's required by

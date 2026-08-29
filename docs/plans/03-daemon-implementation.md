@@ -42,7 +42,7 @@ actual answer to "force-killed without cleanup": nothing about correctness depen
 graceful shutdown having run. A per-repo metadata file (`daemon.json`: pid, pipe/socket path,
 started-at) is written on startup purely as a hint for where to connect — if connecting fails,
 the file is stale and gets overwritten, no different from it not existing. On POSIX, a stale
-Unix socket *file* (as opposed to the kernel resource) can survive a crash; startup tries to
+Unix socket _file_ (as opposed to the kernel resource) can survive a crash; startup tries to
 connect first, and only `unlink`s and rebinds after a failed connection confirms it's dead.
 Windows pipes need no such dance — the OS doesn't leave a stale pipe object at all.
 
@@ -111,7 +111,7 @@ That stays an open question below rather than being rushed into this plan.
   happens well before "every reference is indexed" — consistent with `initialDesign.md`'s call
   for an explicit "indexing…" state rather than blocking silently on a big cold build.
 - **`src/watcher.ts`** — wraps `chokidar`: seeds the initial file set from `git ls-files
-  --cached --others --exclude-standard`, filters later `add`/`change` events through a batched
+--cached --others --exclude-standard`, filters later `add`/`change` events through a batched
   `git check-ignore --stdin`, debounces per-file churn, and separately watches `.git/logs/HEAD`
   for the checkpoint trigger.
 - **`src/checkpoints.ts`** — cold-start promotion (via `packages/db`'s `findClosestCheckpoint`,
@@ -141,7 +141,7 @@ That stays an open question below rather than being rushed into this plan.
 - **`packages/core/src/index.ts`** — add `Location`, `ResolvedSymbol`, `Occurrence`,
   `EnclosingScope`; change `WhatRefs.references` to `Occurrence[]`.
 - **`packages/db/src/checkpoint.ts`** — add `evictCheckpoints(checkpointsDir, budgetBytes,
-  protectedTreeHashes)`.
+protectedTreeHashes)`.
 
 ## Tests
 

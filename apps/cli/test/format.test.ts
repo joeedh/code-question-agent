@@ -1,7 +1,12 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { type EnclosingScope, type ResolvedSymbol, type SymbolInfo, type WhatRefs } from "@code-question-agent/core";
+import {
+  type EnclosingScope,
+  type ResolvedSymbol,
+  type SymbolInfo,
+  type WhatRefs,
+} from "@code-question-agent/core";
 import { toFileUri } from "@code-question-agent/lsp-bridge";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type CliOptions } from "../src/args.ts";
@@ -32,7 +37,10 @@ describe("format", () => {
   beforeEach(async () => {
     dir = await mkdtemp(path.join(tmpdir(), "code-question-agent-cli-format-"));
     const filePath = path.join(dir, "greeter.ts");
-    await writeFile(filePath, ["export function greet(name: string) {", "  return `hi ${name}`;", "}"].join("\n"));
+    await writeFile(
+      filePath,
+      ["export function greet(name: string) {", "  return `hi ${name}`;", "}"].join("\n"),
+    );
     uri = toFileUri(filePath);
   });
 
@@ -42,12 +50,38 @@ describe("format", () => {
 
   // `line`/`col` are 0-indexed (LSP convention); the human formatter displays them as 1-indexed.
   function symbolInfoReport(): SymbolInfo {
-    const symbol: ResolvedSymbol = { id: 1, name: "greet", kind: "12", file: uri, line: 0, col: 0, endLine: 0, endCol: 5 };
-    return { type: "symbol-info", id: "r1", title: "Symbol lookup", content: "", query: { type: "symbol-query", symbol: "greet" }, info: "", symbols: [symbol] };
+    const symbol: ResolvedSymbol = {
+      id: 1,
+      name: "greet",
+      kind: "12",
+      file: uri,
+      line: 0,
+      col: 0,
+      endLine: 0,
+      endCol: 5,
+    };
+    return {
+      type: "symbol-info",
+      id: "r1",
+      title: "Symbol lookup",
+      content: "",
+      query: { type: "symbol-query", symbol: "greet" },
+      info: "",
+      symbols: [symbol],
+    };
   }
 
   function whatRefsReport(): WhatRefs {
-    const symbol: ResolvedSymbol = { id: 1, name: "greet", kind: "12", file: uri, line: 0, col: 0, endLine: 0, endCol: 5 };
+    const symbol: ResolvedSymbol = {
+      id: 1,
+      name: "greet",
+      kind: "12",
+      file: uri,
+      line: 0,
+      col: 0,
+      endLine: 0,
+      endCol: 5,
+    };
     return {
       type: "what-refs",
       id: "r2",
@@ -75,14 +109,22 @@ describe("format", () => {
 
   it("omits the column range when --exclude-column is set", async () => {
     const result: QueryResult = { report: symbolInfoReport(), traces: new Map() };
-    const output = await formatHuman(result, baseOpts({ excludeColumn: true }), createSnippetReader());
+    const output = await formatHuman(
+      result,
+      baseOpts({ excludeColumn: true }),
+      createSnippetReader(),
+    );
     expect(output).toContain("greeter.ts:1:definition:12");
     expect(output).not.toContain("1:1-6");
   });
 
   it("drops line numbers entirely when --include-line is false", async () => {
     const result: QueryResult = { report: symbolInfoReport(), traces: new Map() };
-    const output = await formatHuman(result, baseOpts({ includeLine: false }), createSnippetReader());
+    const output = await formatHuman(
+      result,
+      baseOpts({ includeLine: false }),
+      createSnippetReader(),
+    );
     expect(output).toContain("greeter.ts:definition:12");
     expect(output).toContain("export function greet(name: string) {");
     expect(output).not.toContain("1: export function greet");
@@ -100,13 +142,21 @@ describe("format", () => {
       trace: [],
     };
     const result: QueryResult = { report, traces: new Map([[1, trace]]) };
-    const output = await formatHuman(result, baseOpts({ includeClassTrace: true }), createSnippetReader());
+    const output = await formatHuman(
+      result,
+      baseOpts({ includeClassTrace: true }),
+      createSnippetReader(),
+    );
     expect(output).toContain("inside (script root)");
   });
 
   it("reports no matches instead of an empty block list", async () => {
     const report: SymbolInfo = { ...symbolInfoReport(), symbols: [] };
-    const output = await formatHuman({ report, traces: new Map() }, baseOpts(), createSnippetReader());
+    const output = await formatHuman(
+      { report, traces: new Map() },
+      baseOpts(),
+      createSnippetReader(),
+    );
     expect(output).toBe("no matching symbols");
   });
 

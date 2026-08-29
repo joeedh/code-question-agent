@@ -62,7 +62,10 @@ function passesFileFilters(file: string, query: Query): boolean {
  * `fileInclude`/`fileExclude` narrow by the declaring file — `whatRefs`/`enclosingScope`
  * inherit this for free since they resolve their symbol through this same function.
  */
-export async function resolveSymbols(db: Kysely<Database>, query: Query): Promise<ResolvedSymbol[]> {
+export async function resolveSymbols(
+  db: Kysely<Database>,
+  query: Query,
+): Promise<ResolvedSymbol[]> {
   let builder = db.selectFrom("symbols").selectAll();
 
   if (isSearchQuery(query)) {

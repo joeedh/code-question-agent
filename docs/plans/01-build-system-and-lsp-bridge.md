@@ -39,6 +39,7 @@ bridge's design.
 ## Steps
 
 1. **Workspace scaffolding**
+
    - `pnpm-workspace.yaml` naming `packages/*` and `apps/*`.
    - Root `package.json`: workspace-level scripts (`build`, `lint`, `lint:prose`, `test`) and
      shared devDependencies (`typescript`, `esbuild`, `eslint`, `@pathtx/prettier`).
@@ -50,6 +51,7 @@ bridge's design.
      near-empty workspace before writing any real code against it.
 
 2. **`packages/lsp-bridge`: spawn and speak to the server**
+
    - A process wrapper that spawns `tsc.exe --lsp --stdio` (the binary's path is
      configurable, since it lives in a separate checkout this repo doesn't own) and frames
      LSP's `Content-Length`-delimited JSON-RPC messages.

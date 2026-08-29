@@ -21,9 +21,9 @@ describe("migrations", () => {
   });
 
   it("creates the four tables", async () => {
-    const rows = await sql<{ name: string }>`select name from sqlite_master where type = 'table'`.execute(
-      db,
-    );
+    const rows = await sql<{
+      name: string;
+    }>`select name from sqlite_master where type = 'table'`.execute(db);
     const names = rows.rows.map((row) => row.name).sort();
     expect(names).toEqual(
       [
@@ -40,9 +40,9 @@ describe("migrations", () => {
   });
 
   it("creates the expected indexes", async () => {
-    const rows = await sql<{ name: string }>`select name from sqlite_master where type = 'index'`.execute(
-      db,
-    );
+    const rows = await sql<{
+      name: string;
+    }>`select name from sqlite_master where type = 'index'`.execute(db);
     const names = rows.rows.map((row) => row.name);
     expect(names).toEqual(
       expect.arrayContaining([

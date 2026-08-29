@@ -42,7 +42,10 @@ export async function isAddressLive(address: string): Promise<boolean> {
   });
 }
 
-export async function startIpcServer(address: string, handlers: RequestHandlers): Promise<IpcServer> {
+export async function startIpcServer(
+  address: string,
+  handlers: RequestHandlers,
+): Promise<IpcServer> {
   if (process.platform !== "win32") {
     // A named pipe leaves no filesystem trace once its owning process is gone, so this
     // cleanup only applies to a POSIX Unix domain socket file.

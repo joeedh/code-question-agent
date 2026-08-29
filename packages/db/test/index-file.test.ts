@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { LspBridge } from "@code-question-agent/lsp-bridge";
 import { type Kysely } from "kysely";
-import { type DocumentSymbol, type Location, SymbolKind } from "vscode-languageserver-protocol/node";
+import {
+  type DocumentSymbol,
+  type Location,
+  SymbolKind,
+} from "vscode-languageserver-protocol/node";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
   classifyOccurrenceKind,
@@ -16,7 +20,15 @@ import { type Database } from "../src/schema.ts";
 import { positionOf } from "./position.ts";
 
 const tscPath = process.env.TSC_LSP_PATH;
-const fixturesDir = path.join(import.meta.dirname, "..", "..", "lsp-bridge", "test", "fixtures", "basic");
+const fixturesDir = path.join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "lsp-bridge",
+  "test",
+  "fixtures",
+  "basic",
+);
 const greeterPath = path.join(fixturesDir, "greeter.ts");
 const callerPath = path.join(fixturesDir, "caller.ts");
 
@@ -61,11 +73,22 @@ describe("classifyOccurrenceKind", () => {
 describe("mapReferencesToOccurrences", () => {
   it("attaches the given symbol id and delegates kind classification", () => {
     const locations: Location[] = [
-      { uri: "file:///a.ts", range: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } } },
+      {
+        uri: "file:///a.ts",
+        range: { start: { line: 1, character: 2 }, end: { line: 1, character: 7 } },
+      },
     ];
     const rows = mapReferencesToOccurrences(42, locations, () => "call");
     expect(rows).toEqual([
-      { symbol_id: 42, file: "file:///a.ts", line: 1, col: 2, end_line: 1, end_col: 7, kind: "call" },
+      {
+        symbol_id: 42,
+        file: "file:///a.ts",
+        line: 1,
+        col: 2,
+        end_line: 1,
+        end_col: 7,
+        kind: "call",
+      },
     ]);
   });
 });

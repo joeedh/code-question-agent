@@ -20,7 +20,9 @@ async function main(): Promise<void> {
   try {
     await waitForIndexing(connection, opts);
     const result = await runQuery(connection, opts);
-    const output = opts.json ? formatJson(result) : await formatHuman(result, opts, createSnippetReader());
+    const output = opts.json
+      ? formatJson(result)
+      : await formatHuman(result, opts, createSnippetReader());
     console.log(output);
   } finally {
     connection.dispose();

@@ -1,13 +1,12 @@
-# Ideas 
+# Ideas
 
 Tool for llm querying of codebases, interfaces with LSP servers.
-All queries can search both for an exact symbol and also a 
+All queries can search both for an exact symbol and also a
 regexp used to search all symbols matching it.
 
 ## Potetial Example
 
 example of potential usage:
-
 
 ```
 == path/to/file:32-37:ref:call: ==
@@ -51,6 +50,7 @@ baseFunctionInterface: {
 ```
 
 notes:
+
 - the `--include-class-trace` flag includes a lexical call trace in the
   result, shown above as 'inside SomeClass.Bleh.closure1'.
 - the `--context-lines` flag controls how much context is shown around the

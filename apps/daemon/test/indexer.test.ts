@@ -57,7 +57,11 @@ describe.skipIf(!tscPath)("indexer + query, end to end against the real tsc --ls
   });
 
   it("answers a regexp search across symbols", async () => {
-    const report = await symbolLookup(db, { type: "search-query", query: "^Greeter$", useRegExp: true });
+    const report = await symbolLookup(db, {
+      type: "search-query",
+      query: "^Greeter$",
+      useRegExp: true,
+    });
     expect(report.symbols.length).toBeGreaterThan(0);
     expect(report.symbols.every((s) => s.name === "Greeter")).toBe(true);
     expect(report.symbols.some((s) => s.file.endsWith("greeter.ts"))).toBe(true);
@@ -78,7 +82,11 @@ describe.skipIf(!tscPath)("indexer + query, end to end against the real tsc --ls
 
   it("removeFile clears a file's symbols and occurrences", async () => {
     await indexer.removeFile(greeterPath);
-    const remaining = await db.selectFrom("symbols").selectAll().where("file", "like", "%greeter.ts").execute();
+    const remaining = await db
+      .selectFrom("symbols")
+      .selectAll()
+      .where("file", "like", "%greeter.ts")
+      .execute();
     expect(remaining).toEqual([]);
 
     // Restore for any test file order that might run after this one.

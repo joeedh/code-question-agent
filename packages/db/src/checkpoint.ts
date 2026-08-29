@@ -30,7 +30,9 @@ export async function listCheckpoints(checkpointsDir: string): Promise<string[]>
   } catch {
     return [];
   }
-  return entries.filter((name) => name.endsWith(".sqlite")).map((name) => path.basename(name, ".sqlite"));
+  return entries
+    .filter((name) => name.endsWith(".sqlite"))
+    .map((name) => path.basename(name, ".sqlite"));
 }
 
 export function checkpointPath(checkpointsDir: string, treeHash: string): string {

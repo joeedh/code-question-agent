@@ -33,7 +33,13 @@ function toPosix(relativePath: string): string {
 
 /** The cold-start file list: already gitignore-aware, so no separate ignore-matching pass is needed. */
 export async function listTrackedFiles(repoRoot: string): Promise<string[]> {
-  const output = await git(repoRoot, ["ls-files", "--cached", "--others", "--exclude-standard", "-z"]);
+  const output = await git(repoRoot, [
+    "ls-files",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ]);
   return output
     .split("\0")
     .filter((entry) => entry.length > 0)
@@ -57,7 +63,9 @@ export async function filterIgnored(repoRoot: string, absolutePaths: string[]): 
     `${pairs.map(([, relative]) => relative).join("\n")}\n`,
   );
   const ignored = new Set(stdout.split("\n").filter((line) => line.length > 0));
-  return pairs.filter(([, relative]) => !ignored.has(relative)).map(([absolutePath]) => absolutePath);
+  return pairs
+    .filter(([, relative]) => !ignored.has(relative))
+    .map(([absolutePath]) => absolutePath);
 }
 
 export interface WatcherHandlers {
@@ -86,32 +94,75 @@ function debouncer(delayMs: number) {
 }
 
 /**
- * Watches the tracked source tree (via `chokidar`, `.git` excluded) and, separately, the
+ * Directories that never hold source this tool indexes, skipped before an event is even
+ * raised. `filterIgnored` still decides correctness; this only keeps a dependency install or
+ * a build from queueing tens of thousands of paths it would have discarded anyway.
+ */
+const NEVER_WATCHED = /(^|[/\\])(\.git|node_modules)([/\\]|$)/;
+
+/**
+ * Watches the tracked source tree (via `chokidar`, `NEVER_WATCHED` excluded) and, separately, the
  * reflog (`.git/logs/HEAD`) — appended to on every ref update (commit, checkout, merge,
  * rebase) — as the checkpoint-capture trigger, avoiding a git hook this tool doesn't own.
  */
-export function watchRepo(repoRoot: string, handlers: WatcherHandlers, debounceMs = 150): RepoWatcher {
+export function watchRepo(
+  repoRoot: string,
+  handlers: WatcherHandlers,
+  debounceMs = 150,
+): RepoWatcher {
   const debounce = debouncer(debounceMs);
   const reflogPath = path.join(repoRoot, ".git", "logs", "HEAD");
 
   const sourceWatcher = chokidar.watch(repoRoot, {
-    ignored: /(^|[/\\])\.git([/\\]|$)/,
+    ignored: NEVER_WATCHED,
     ignoreInitial: true,
     persistent: true,
   });
 
-  sourceWatcher.on("add", (filePath: string) => {
-    void filterIgnored(repoRoot, [filePath]).then(([kept]) => {
-      if (kept) debounce(filePath, () => handlers.onFileChanged(filePath));
-    });
-  });
-  sourceWatcher.on("change", (filePath: string) => {
-    void filterIgnored(repoRoot, [filePath]).then(([kept]) => {
-      if (kept) debounce(filePath, () => handlers.onFileChanged(filePath));
-    });
-  });
+  const changed = new Set<string>();
+  const removed = new Set<string>();
+  let flushTimer: NodeJS.Timeout | undefined;
+  // Flushes run end to end so a batch can't overlap the next one and double the git processes
+  // in flight; `close` awaits this to avoid dispatching into a torn-down daemon.
+  let flushing: Promise<void> = Promise.resolve();
+
+  async function flush(): Promise<void> {
+    const batch = [...changed];
+    const gone = [...removed];
+    changed.clear();
+    removed.clear();
+    for (const filePath of gone) handlers.onFileRemoved(filePath);
+    if (batch.length === 0) return;
+    const kept = await filterIgnored(repoRoot, batch).catch(() => [] as string[]);
+    for (const filePath of kept) handlers.onFileChanged(filePath);
+  }
+
+  /**
+   * Debounces ahead of `filterIgnored` rather than after it. Filtering spawns a `git
+   * check-ignore` per call, so reacting per event spawned one process per file written — a
+   * build or an install landed thousands at once. Coalescing first makes a storm cost one
+   * batched spawn, and the quiet period means none at all while it is still being written.
+   */
+  function schedule(): void {
+    if (flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(() => {
+      flushTimer = undefined;
+      flushing = flushing.then(flush, flush);
+    }, debounceMs);
+  }
+
+  function record(filePath: string): void {
+    removed.delete(filePath);
+    changed.add(filePath);
+    schedule();
+  }
+
+  sourceWatcher.on("add", record);
+  sourceWatcher.on("change", record);
   sourceWatcher.on("unlink", (filePath: string) => {
-    debounce(filePath, () => handlers.onFileRemoved(filePath));
+    changed.delete(filePath);
+    removed.add(filePath);
+    schedule();
   });
 
   const reflogWatcher = chokidar.watch(reflogPath, { ignoreInitial: true, persistent: true });
@@ -120,7 +171,9 @@ export function watchRepo(repoRoot: string, handlers: WatcherHandlers, debounceM
 
   return {
     close: async () => {
+      if (flushTimer) clearTimeout(flushTimer);
       await Promise.all([sourceWatcher.close(), reflogWatcher.close()]);
+      await flushing;
     },
   };
 }

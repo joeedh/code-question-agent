@@ -52,14 +52,25 @@ describe("ipc", () => {
       },
       query: async (request) => {
         received.push(request);
-        return { type: "symbol-info", id: "1", title: "t", content: "c", query: request.query, info: "", symbols: [] };
+        return {
+          type: "symbol-info",
+          id: "1",
+          title: "t",
+          content: "c",
+          query: request.query,
+          info: "",
+          symbols: [],
+        };
       },
       shutdown: async () => undefined,
     });
 
     try {
       const client = await connectIpc(address);
-      const request = { query: { type: "symbol-query", symbol: "foo" }, report: "symbol-info" as const };
+      const request = {
+        query: { type: "symbol-query", symbol: "foo" },
+        report: "symbol-info" as const,
+      };
       const report = await client.sendRequest(REQUEST_QUERY, request);
       expect(received).toEqual([request]);
       expect(report).toMatchObject({ type: "symbol-info" });

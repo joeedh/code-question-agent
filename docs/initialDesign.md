@@ -118,7 +118,7 @@ to an unfamiliar branch/worktree):
 
 1. Search existing checkpoints for the closest match — not by graph
    distance, but by `git diff --name-status --find-renames <candidate>
-   <target>` file-change count. A candidate two hops away with a small
+<target>` file-change count. A candidate two hops away with a small
    diff beats a one-hop candidate that sits across a big refactor.
 2. Apply that diff in place onto the candidate checkpoint (reparse
    changed files, path-rewrite renames, drop removed files) rather than

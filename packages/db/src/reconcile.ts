@@ -29,7 +29,9 @@ export async function recordFileState(db: Kysely<Database>, file: string): Promi
   await db
     .insertInto("file_state")
     .values({ file, content_hash, mtime: quick.mtime, size: quick.size })
-    .onConflict((oc) => oc.column("file").doUpdateSet({ content_hash, mtime: quick.mtime, size: quick.size }))
+    .onConflict((oc) =>
+      oc.column("file").doUpdateSet({ content_hash, mtime: quick.mtime, size: quick.size }),
+    )
     .execute();
 }
 

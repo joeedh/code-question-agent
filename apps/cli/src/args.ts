@@ -24,7 +24,8 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 function parseIntFlag(name: string, value: string | undefined): number | undefined {
   if (value === undefined) return undefined;
   const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed)) throw new Error(`--${name} expects an integer, got ${JSON.stringify(value)}`);
+  if (Number.isNaN(parsed))
+    throw new Error(`--${name} expects an integer, got ${JSON.stringify(value)}`);
   return parsed;
 }
 

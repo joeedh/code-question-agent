@@ -77,7 +77,9 @@ describe("checkpoint identity", () => {
 
     const hashes = await listCheckpoints(checkpointsDir);
     expect(hashes.sort()).toEqual(["abc123", "def456"]);
-    expect(checkpointPath(checkpointsDir, "abc123")).toBe(path.join(checkpointsDir, "abc123.sqlite"));
+    expect(checkpointPath(checkpointsDir, "abc123")).toBe(
+      path.join(checkpointsDir, "abc123.sqlite"),
+    );
   });
 
   it("returns an empty list for a checkpoints directory that doesn't exist yet", async () => {

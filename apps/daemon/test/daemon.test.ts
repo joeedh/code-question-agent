@@ -6,7 +6,12 @@ import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { connectIpc, isAddressLive } from "../src/ipc.ts";
 import { startDaemon } from "../src/index.ts";
-import { REQUEST_QUERY, REQUEST_SHUTDOWN, REQUEST_STATUS, type StatusResult } from "../src/protocol.ts";
+import {
+  REQUEST_QUERY,
+  REQUEST_SHUTDOWN,
+  REQUEST_STATUS,
+  type StatusResult,
+} from "../src/protocol.ts";
 
 const tscPath = process.env.TSC_LSP_PATH;
 const execFileAsync = promisify(execFile);
@@ -22,7 +27,7 @@ async function initFixtureRepo(repoDir: string): Promise<void> {
   await git(repoDir, ["config", "user.name", "Test"]);
   await writeFile(
     path.join(repoDir, "greet.ts"),
-    'export function greet(name: string): string {\n  return `hi ${name}`;\n}\n',
+    "export function greet(name: string): string {\n  return `hi ${name}`;\n}\n",
   );
   await git(repoDir, ["add", "-A"]);
   await git(repoDir, ["commit", "--quiet", "-m", "initial"]);
@@ -55,12 +60,18 @@ describe.skipIf(!tscPath)("daemon, end to end", () => {
     // file handle open for a moment after the owning promise resolves; retry past it rather
     // than flake.
     await Promise.all(
-      [repoDir, dataDir].map((dir) => rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })),
+      [repoDir, dataDir].map((dir) =>
+        rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }),
+      ),
     );
   }, 15_000);
 
   it("cold-indexes, answers a query over the real IPC transport, and shuts down cleanly", async () => {
-    const handle = await startDaemon({ repoRoot: repoDir, tscPath: tscPath!, baseDataDir: dataDir });
+    const handle = await startDaemon({
+      repoRoot: repoDir,
+      tscPath: tscPath!,
+      baseDataDir: dataDir,
+    });
     await handle.waitForColdIndex();
 
     const client = await connectIpc(handle.ipcAddress);
@@ -82,45 +93,45 @@ describe.skipIf(!tscPath)("daemon, end to end", () => {
     await waitUntil(async () => !(await isAddressLive(handle.ipcAddress)));
   }, 30_000);
 
-  it(
-    "a force-killed daemon leaves no state blocking a fresh daemon on the same repo",
-    async () => {
-      // Spawns the built app (`pnpm run build` must have run) so it can be force-killed as a
-      // genuinely separate process — killing part of the current test process isn't possible.
-      const daemonEntry = path.join(import.meta.dirname, "..", "dist", "index.js");
-      const child = spawn(process.execPath, [daemonEntry, repoDir], {
-        env: { ...process.env, TSC_LSP_PATH: tscPath!, CODE_QUESTION_AGENT_DATA_DIR: dataDir },
-      });
+  it("a force-killed daemon leaves no state blocking a fresh daemon on the same repo", async () => {
+    // Spawns the built app (`pnpm run build` must have run) so it can be force-killed as a
+    // genuinely separate process — killing part of the current test process isn't possible.
+    const daemonEntry = path.join(import.meta.dirname, "..", "dist", "index.js");
+    const child = spawn(process.execPath, [daemonEntry, repoDir], {
+      env: { ...process.env, TSC_LSP_PATH: tscPath!, CODE_QUESTION_AGENT_DATA_DIR: dataDir },
+    });
 
-      let ipcAddress: string | undefined;
-      child.stdout?.on("data", (chunk: Buffer) => {
-        const match = /daemon listening at (.+)/.exec(chunk.toString());
-        if (match?.[1]) ipcAddress = match[1].trim();
-      });
+    let ipcAddress: string | undefined;
+    child.stdout?.on("data", (chunk: Buffer) => {
+      const match = /daemon listening at (.+)/.exec(chunk.toString());
+      if (match?.[1]) ipcAddress = match[1].trim();
+    });
 
+    try {
+      await waitUntil(() => ipcAddress !== undefined);
+      await waitUntil(() => isAddressLive(ipcAddress!));
+
+      // No SIGTERM/SIGINT — this skips every cleanup handler in `startDaemon`'s `shutdown`,
+      // which is exactly the scenario the IPC design (`docs/plans/03-daemon-implementation.md`)
+      // has to survive.
+      child.kill("SIGKILL");
+      await new Promise<void>((resolve) => child.once("exit", () => resolve()));
+
+      const handle = await startDaemon({
+        repoRoot: repoDir,
+        tscPath: tscPath!,
+        baseDataDir: dataDir,
+      });
       try {
-        await waitUntil(() => ipcAddress !== undefined);
-        await waitUntil(() => isAddressLive(ipcAddress!));
-
-        // No SIGTERM/SIGINT — this skips every cleanup handler in `startDaemon`'s `shutdown`,
-        // which is exactly the scenario the IPC design (`docs/plans/03-daemon-implementation.md`)
-        // has to survive.
-        child.kill("SIGKILL");
-        await new Promise<void>((resolve) => child.once("exit", () => resolve()));
-
-        const handle = await startDaemon({ repoRoot: repoDir, tscPath: tscPath!, baseDataDir: dataDir });
-        try {
-          const client = await connectIpc(handle.ipcAddress);
-          const status = await client.sendRequest<StatusResult>(REQUEST_STATUS);
-          expect(status.pid).toBe(process.pid);
-          client.dispose();
-        } finally {
-          await handle.shutdown();
-        }
+        const client = await connectIpc(handle.ipcAddress);
+        const status = await client.sendRequest<StatusResult>(REQUEST_STATUS);
+        expect(status.pid).toBe(process.pid);
+        client.dispose();
       } finally {
-        if (!child.killed) child.kill();
+        await handle.shutdown();
       }
-    },
-    30_000,
-  );
+    } finally {
+      if (!child.killed) child.kill();
+    }
+  }, 30_000);
 });

@@ -194,8 +194,8 @@ this file, and to all Markdown files.
   keeps its backticks, where the marking separates a path from the prose around it rather than
   competing with nearby identifiers.
 - **Bracket a subordinate alternative rather than fencing it with commas.** Parentheses mark the
-  material as skippable, so the reader gets a complete sentence either way; paired commas leave
-  it unclear whether the second comma closes an interpolation or opens a new clause. Write
-  "Dropping onto itself (or onto a neighbor it would split against) is not a rip". Drop any comma
-  that would follow the closing bracket — it separates the subject from its verb.
+material as skippable, so the reader gets a complete sentence either way; paired commas leave
+it unclear whether the second comma closes an interpolation or opens a new clause. Write
+"Dropping onto itself (or onto a neighbor it would split against) is not a rip". Drop any comma
+that would follow the closing bracket — it separates the subject from its verb.
 <!-- commentlint-on -->

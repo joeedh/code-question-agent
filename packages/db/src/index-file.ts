@@ -102,7 +102,11 @@ export async function replaceFileIndex(
   index: FileIndex,
 ): Promise<void> {
   await db.transaction().execute(async (trx) => {
-    const existing = await trx.selectFrom("symbols").select("id").where("file", "=", file).execute();
+    const existing = await trx
+      .selectFrom("symbols")
+      .select("id")
+      .where("file", "=", file)
+      .execute();
     const existingIds = existing.map((row) => row.id);
     if (existingIds.length > 0) {
       await trx.deleteFrom("edges").where("from_id", "in", existingIds).execute();

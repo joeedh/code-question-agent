@@ -35,7 +35,9 @@ async function waitUntilLive(address: string, timeoutMs: number): Promise<void> 
 function spawnDaemon(repoRoot: string): void {
   const tscPath = process.env.TSC_LSP_PATH;
   if (!tscPath) {
-    throw new Error("TSC_LSP_PATH must point at a tsc binary built with `--lsp` support to start the daemon.");
+    throw new Error(
+      "TSC_LSP_PATH must point at a tsc binary built with `--lsp` support to start the daemon.",
+    );
   }
   const daemonEntry = fileURLToPath(import.meta.resolve("@code-question-agent/daemon"));
   const child = spawn(process.execPath, [daemonEntry, repoRoot], {
@@ -68,7 +70,10 @@ export async function ensureDaemon(repoRoot: string, opts: CliOptions): Promise<
 }
 
 /** Polls `status` until the cold-start index finishes, printing a one-time notice while it waits. */
-export async function waitForIndexing(connection: MessageConnection, opts: CliOptions): Promise<void> {
+export async function waitForIndexing(
+  connection: MessageConnection,
+  opts: CliOptions,
+): Promise<void> {
   if (opts.noWait) return;
 
   let status = await connection.sendRequest<StatusResult>(REQUEST_STATUS);

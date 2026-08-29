@@ -12,7 +12,9 @@ function displayPath(file: string): string {
 
 function formatTraceLine(trace: EnclosingScope | undefined): string | undefined {
   if (!trace) return undefined;
-  return trace.trace.length === 0 ? "  inside (script root)" : `  inside ${trace.trace.map((s) => s.name).join(".")}`;
+  return trace.trace.length === 0
+    ? "  inside (script root)"
+    : `  inside ${trace.trace.map((s) => s.name).join(".")}`;
 }
 
 /** `Location` carries 0-indexed LSP line/column numbers; the human-readable format shows the conventional 1-indexed ones. */
@@ -26,7 +28,9 @@ function formatHeader(location: Location, label: string, opts: CliOptions): stri
     const startLine = displayLine(location.line);
     const endLine = displayLine(location.endLine);
     const lineRange = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`;
-    parts.push(opts.excludeColumn ? lineRange : `${lineRange}:${location.col + 1}-${location.endCol + 1}`);
+    parts.push(
+      opts.excludeColumn ? lineRange : `${lineRange}:${location.col + 1}-${location.endCol + 1}`,
+    );
   }
   parts.push(label);
   return `== ${parts.join(":")} ==`;
@@ -50,19 +54,33 @@ async function formatBlock(
   return lines.join("\n");
 }
 
-export async function formatHuman(result: QueryResult, opts: CliOptions, snippetReader: SnippetReader): Promise<string> {
+export async function formatHuman(
+  result: QueryResult,
+  opts: CliOptions,
+  snippetReader: SnippetReader,
+): Promise<string> {
   const { report, traces } = result;
   const blocks: Promise<string>[] = [];
 
   if (report.type === "symbol-info") {
     for (const symbol of report.symbols) {
-      blocks.push(formatBlock(symbol, `definition:${symbol.kind}`, opts, snippetReader, formatTraceLine(traces.get(symbol.id))));
+      blocks.push(
+        formatBlock(
+          symbol,
+          `definition:${symbol.kind}`,
+          opts,
+          snippetReader,
+          formatTraceLine(traces.get(symbol.id)),
+        ),
+      );
     }
     if (report.symbols.length === 0) return "no matching symbols";
   } else {
     const traceLine = formatTraceLine(traces.get(report.symbol.id));
     for (const occurrence of report.references) {
-      blocks.push(formatBlock(occurrence, `ref:${occurrence.kind}`, opts, snippetReader, traceLine));
+      blocks.push(
+        formatBlock(occurrence, `ref:${occurrence.kind}`, opts, snippetReader, traceLine),
+      );
     }
     if (report.references.length === 0) return `no references found for ${report.symbol.name}`;
   }

@@ -61,7 +61,10 @@ export function createIndexer(db: Kysely<Database>, bridge: LspBridge): Indexer 
         textByUri.set(location.uri, text);
       }
       const lineText = text.split("\n")[location.range.start.line] ?? "";
-      kinds.set(locationKey(location), classifyOccurrenceKind(lineText, location.range.end.character));
+      kinds.set(
+        locationKey(location),
+        classifyOccurrenceKind(lineText, location.range.end.character),
+      );
     }
     return kinds;
   }
@@ -75,7 +78,8 @@ export function createIndexer(db: Kysely<Database>, bridge: LspBridge): Indexer 
     if (!stillExists) return; // the file was re-indexed before this item drained.
 
     const locations =
-      (await bridge.references(item.uri, { line: item.line, character: item.character }, false)) ?? [];
+      (await bridge.references(item.uri, { line: item.line, character: item.character }, false)) ??
+      [];
     if (locations.length === 0) return;
 
     const kinds = await classifyLocations(locations);

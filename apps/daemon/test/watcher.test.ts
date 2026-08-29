@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -100,6 +100,79 @@ describe("watchRepo", () => {
       await watcher.close();
     }
   }, 15_000);
+
+  it("coalesces a burst of writes into one batch instead of one git spawn per file", async () => {
+    const batches: string[][] = [];
+    let current: string[] | undefined;
+    const watcher = watchRepo(
+      repoDir,
+      {
+        // `flush` dispatches a whole batch synchronously, so paths landing in one turn of the
+        // event loop came from a single `git check-ignore`.
+        onFileChanged: (file) => {
+          if (!current) {
+            current = [];
+            batches.push(current);
+            setImmediate(() => (current = undefined));
+          }
+          current.push(path.basename(file));
+        },
+        onFileRemoved: () => undefined,
+        onReflogChanged: () => undefined,
+      },
+      20,
+    );
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const names = Array.from({ length: 200 }, (_, i) => `burst-${i}.ts`);
+      await Promise.all(
+        names.map((name) => writeFile(path.join(repoDir, name), "export const a = 1;\n")),
+      );
+
+      const seen = (): string[] => batches.flat();
+      await waitUntil(() => names.every((name) => seen().includes(name)), 10_000);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Pre-fix this was one batch (and one spawned process) per file.
+      expect(batches.length).toBeLessThan(20);
+    } finally {
+      await watcher.close();
+    }
+  }, 30_000);
+
+  it("raises no events for node_modules churn", async () => {
+    const changed: string[] = [];
+    const watcher = watchRepo(
+      repoDir,
+      {
+        onFileChanged: (file) => changed.push(file),
+        onFileRemoved: () => undefined,
+        onReflogChanged: () => undefined,
+      },
+      20,
+    );
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await mkdir(path.join(repoDir, "node_modules", "pkg"), { recursive: true });
+      await Promise.all(
+        Array.from({ length: 50 }, (_, i) =>
+          writeFile(
+            path.join(repoDir, "node_modules", "pkg", `dep-${i}.ts`),
+            "export const a = 1;\n",
+          ),
+        ),
+      );
+      await writeFile(path.join(repoDir, "sentinel.ts"), "export const a = 1;\n");
+
+      await waitUntil(() => changed.some((file) => path.basename(file) === "sentinel.ts"), 5_000);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      expect(changed.filter((file) => file.includes("node_modules"))).toEqual([]);
+    } finally {
+      await watcher.close();
+    }
+  }, 30_000);
 
   it("fires a debounced reflog-change signal on commit", async () => {
     let fired = 0;

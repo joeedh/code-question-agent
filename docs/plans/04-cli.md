@@ -98,7 +98,7 @@ forward as open questions, same as plan 3's `extends`/`implements`-edge deferral
 
 Added after the initial plan-4 implementation, in response to a direct request: narrow a query
 by path, e.g. "only `greet` declared under `src/`, not `test/`." Confirmed with the user that
-the filter applies to where a symbol is *declared*, not to each individual reference's file —
+the filter applies to where a symbol is _declared_, not to each individual reference's file —
 so `--what-refs --include 'src/'` means "references to whichever matching symbol is declared
 under `src/`," not "references that themselves live under `src/`."
 
