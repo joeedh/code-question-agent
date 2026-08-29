@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatHelp, parseCliArgs } from "../src/args.ts";
+import { formatHelp, formatLlmHelp, parseCliArgs } from "../src/args.ts";
 
 describe("parseCliArgs", () => {
   it("applies defaults for a bare symbol query", () => {
@@ -51,6 +51,7 @@ describe("parseCliArgs", () => {
     ]);
     expect(opts).toEqual({
       help: false,
+      llmHelp: false,
       query: "^Greet.*",
       regexp: true,
       whatRefs: true,
@@ -90,6 +91,11 @@ describe("parseCliArgs", () => {
   it("does not require a query when --help is given", () => {
     const opts = parseCliArgs(["--help"]);
     expect(opts.help).toBe(true);
+  });
+
+  it("does not require a query when --llm-help is given", () => {
+    const opts = parseCliArgs(["--llm-help"]);
+    expect(opts.llmHelp).toBe(true);
   });
 
   it("accepts -h as a short alias for --help", () => {
@@ -183,5 +189,14 @@ describe("formatHelp", () => {
     ]) {
       expect(help).toContain(flag);
     }
+  });
+});
+
+describe("formatLlmHelp", () => {
+  it("returns non-empty text distinct from formatHelp", () => {
+    const llmHelp = formatLlmHelp();
+    expect(llmHelp.length).toBeGreaterThan(0);
+    expect(llmHelp).not.toBe(formatHelp());
+    expect(llmHelp).toContain("--json");
   });
 });

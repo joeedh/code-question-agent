@@ -45,6 +45,14 @@ describe("cli --help", () => {
   });
 });
 
+describe("cli --llm-help", () => {
+  it("prints LLM-oriented usage and exits without touching the daemon", async () => {
+    const { stdout } = await execFileAsync(process.execPath, [cliEntry, "--llm-help"]);
+    expect(stdout).toContain("code-question-agent");
+    expect(stdout).not.toContain("Usage: code-question-agent <query> [flags]");
+  });
+});
+
 describe.skipIf(!tscPath)("cli, end to end", () => {
   let repoDir: string;
   let dataDir: string;

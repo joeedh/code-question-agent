@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 
 export interface CliOptions {
   help: boolean;
+  llmHelp: boolean;
   query: string;
   /** Path to read `query` from instead of the positional argument. Mutually exclusive with it. */
   queryFile?: string;
@@ -98,6 +99,7 @@ export function parseCliArgs(argv: string[]): CliOptions {
     allowPositionals: true,
     options: {
       help: { type: "boolean", short: "h", default: false },
+      "llm-help": { type: "boolean", default: false },
       regexp: { type: "boolean", default: false },
       "what-refs": { type: "boolean", default: false },
       "include-class-trace": { type: "boolean", default: false },
@@ -119,7 +121,7 @@ export function parseCliArgs(argv: string[]): CliOptions {
 
   const query = positionals[0];
   const queryFile = values["query-file"];
-  if (!values.help) {
+  if (!values.help && !values["llm-help"]) {
     if (query !== undefined && queryFile !== undefined)
       throw new Error("a positional query and --query-file are mutually exclusive");
     if (query === undefined && queryFile === undefined)
@@ -128,6 +130,7 @@ export function parseCliArgs(argv: string[]): CliOptions {
 
   return {
     help: values.help,
+    llmHelp: values["llm-help"],
     query: query ?? "",
     queryFile,
     regexp: values.regexp,
@@ -196,4 +199,35 @@ See docs/cli.md for the full reference.`;
 /** Usage text for `--help`/`-h`, mirroring `docs/cli.md`. */
 export function formatHelp(): string {
   return HELP_TEXT;
+}
+
+const LLM_HELP_TEXT = `code-question-agent answers symbol/reference lookups in a TypeScript repo,
+backed by a daemon-maintained index over its LSP server. It is not a general grep or file-read
+tool — use dedicated grep/read tools for that; use this CLI only for "where is X declared" /
+"where is X referenced" questions.
+
+Invocation: code-question-agent <query> [flags], or --query-file <path> instead of <query>.
+Always pass --json when consuming output programmatically — it prints the raw Report and is
+far easier to parse than the human-readable format.
+
+Disambiguating a query: --file <path>, --line <n>, --col <n> (0-indexed) narrow a symbol query
+to one declaration when the name alone is ambiguous. --regexp treats <query> as a name pattern
+instead of an exact symbol name. --include/--exclude filter results by file with a regexp.
+
+Answer shape: --what-refs answers with references to the symbol instead of its declaration(s).
+--include-class-trace also fetches each symbol's enclosing scope chain.
+
+--file and --line/--col are mutually meaningful only for SymbolQuery (non-regexp) lookups.
+--repo <path> selects which repo's daemon to query (default: current directory).
+
+Examples:
+  code-question-agent greet --json
+  code-question-agent "^Greet.*" --regexp --json
+  code-question-agent greet --file src/greeter.ts --line 3 --what-refs --json
+
+Full flag reference: --help, or docs/cli.md.`;
+
+/** LLM-oriented usage text for `--llm-help`, meant to be prepended to another system prompt. */
+export function formatLlmHelp(): string {
+  return LLM_HELP_TEXT;
 }

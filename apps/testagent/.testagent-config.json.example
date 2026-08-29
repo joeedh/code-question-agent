@@ -1,0 +1,12 @@
+{
+  "enabledTools": ["cli", "grep", "read", "ls"],
+  "toolLimits": {
+    "cli": 20,
+    "grep": 40,
+    "read": 60,
+    "ls": 20
+  },
+  "maxTokenBudget": 200000,
+  "model": "claude-opus-5",
+  "effort": "high"
+}

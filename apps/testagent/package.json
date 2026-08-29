@@ -1,0 +1,17 @@
+{
+  "name": "@code-question-agent/testagent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "testagent": "./dist/index.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@code-question-agent/cli": "workspace:*",
+    "@anthropic-ai/sdk": "^0.122.0"
+  }
+}

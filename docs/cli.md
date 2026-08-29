@@ -85,6 +85,9 @@ code-question-agent <query> [flags]
     connecting to one already running.
 - `--help` / `-h` — print usage and exit. Short-circuits before `<query>` is required and
   before any daemon contact, so it works without `TSC_LSP_PATH` set.
+- `--llm-help` — print LLM-oriented usage text (`formatLlmHelp`, `src/args.ts`) and exit,
+  same short-circuit as `--help`. Meant to be prepended into another agent's system prompt —
+  see `docs/testagent.md` — rather than read by a human.
 
 ## Human output format
 
@@ -120,7 +123,7 @@ One block per match (definition or reference), separated by a blank line:
   with `stdio: "ignore"`, so an error thrown after spawning would be invisible and just show up
   as a `--timeout` "timed out waiting for the daemon to start listening" instead of a clear
   message.
-- Only needed to *spawn* a daemon; connecting to an already-running one needs neither
+- Only needed to _spawn_ a daemon; connecting to an already-running one needs neither
   `TSC_LSP_PATH` nor an installed `typescript`.
 - `-v`'s `daemon` tag logs which `tscPath` a spawn resolved to.
 - Once connected, the CLI never sends `shutdown` — the daemon keeps running for the next

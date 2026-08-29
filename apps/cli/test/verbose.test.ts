@@ -5,6 +5,7 @@ import { createVerboseLogger } from "../src/verbose.ts";
 function baseOpts(overrides: Partial<CliOptions> = {}): CliOptions {
   return {
     help: false,
+    llmHelp: false,
     query: "greet",
     regexp: false,
     whatRefs: false,

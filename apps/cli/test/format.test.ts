@@ -17,6 +17,7 @@ import { createSnippetReader } from "../src/snippet.ts";
 function baseOpts(overrides: Partial<CliOptions> = {}): CliOptions {
   return {
     help: false,
+    llmHelp: false,
     query: "greet",
     regexp: false,
     whatRefs: false,

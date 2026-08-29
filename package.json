@@ -10,7 +10,8 @@
     "lint:prose:concise": "commentlint --concise",
     "format": "prettier --write .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "testagent": "node apps/testagent/dist/index.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
