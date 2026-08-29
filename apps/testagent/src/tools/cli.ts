@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { truncateResult, type Tool } from "./types.ts";
+import { filterPath, filterCode } from "../config.ts";
 
 const TIMEOUT_MS = 60_000;
 

@@ -1,11 +1,18 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { isCode, stripComments } from "./utils.ts";
 
 export const TOOL_NAMES = ["cli", "grep", "read", "ls"] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
 export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type Effort = (typeof EFFORT_LEVELS)[number];
+
+export let theConfig: TestAgentConfig = {
+  enabledTools: [],
+  toolLimits: {},
+  maxTokenBudget: 0,
+};
 
 export interface TestAgentConfig {
   enabledTools: ToolName[];
@@ -14,6 +21,12 @@ export interface TestAgentConfig {
   model?: string;
   effort?: Effort;
   grepExclude?: string[];
+  // hide all comments and non-code files from
+  // the model
+  stripAllDocs: {
+    markdown?: boolean;
+    comments?: boolean;
+  };
 }
 
 const CONFIG_FILE_NAME = ".testagent-config.json";
@@ -98,14 +111,37 @@ export function validateConfig(raw: unknown, configPath: string): TestAgentConfi
     grepExclude.push(s);
   }
 
-  return {
+  let stripAllDocs: typeof theConfig.stripAllDocs | undefined;
+
+  if (
+    obj.stripAllDocs !== undefined &&
+    (typeof obj.stripAllDocs !== "object" || Array.isArray(obj.stripAllDocs))
+  ) {
+    fail('"stripAllDocs" must be an object');
+  } else {
+    stripAllDocs = obj.stripAllDocs ?? {};
+    for (const key in stripAllDocs) {
+      if (key !== "markdown" && key !== "comments") {
+        fail(`"stripAllDocs" must contain only .markdown and .comments`);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (typeof (stripAllDocs as any)[key] !== "boolean") {
+        fail(`"stripAllDocs.${key}" must be a boolean`);
+      }
+    }
+
+    return theConfig
+  }
+
+  Object.assign(theConfig, {
     grepExclude,
     enabledTools,
     toolLimits,
     maxTokenBudget: maxTokenBudget as number,
     model,
     effort,
-  };
+    stripAllDocs,
+  });
 }
 
 /**
@@ -166,4 +202,12 @@ export function resolveToolSelection(
     }
   }
   return cliToolsFlag;
+}
+
+export function filterPath(path: string) {
+  return theConfig.stripAllDocs ? isCode(path) : true;
+}
+
+export function filterCode(code: string, path: string) {
+  return theConfig.stripAllDocs ? stripComments(code, path) : code;
 }

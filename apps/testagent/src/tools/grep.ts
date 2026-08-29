@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { IGNORED_DIR_NAMES, resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
 import type { TestAgentConfig } from "../config.ts";
+import { filterPath, filterCode } from "../config.ts";
 
 const MAX_CONTEXT_LINES = 25;
 
@@ -32,10 +33,10 @@ async function collectFiles(dir: string): Promise<string[]> {
     if (grepConfig.find((g) => g.test(full.replace(/\\/g, "/")))) {
       continue;
     }
-
+    
     if (entry.isDirectory()) {
       files.push(...(await collectFiles(full)));
-    } else if (entry.isFile()) {
+    } else if (entry.isFile() && !filterPath(entry.name)) {
       files.push(full);
     }
   }
@@ -96,6 +97,8 @@ export const grepTool: Tool = {
       } catch {
         continue;
       }
+      content = filterCode(content, file);
+      
       const lines = content.split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (regexp.test(lines[i]!)) {
@@ -112,15 +115,18 @@ export const grepTool: Tool = {
     }
 
     if (matches.length === 0) return "no matches";
+    let lastfile = ''
 
     const blocks = matches.map((match) => {
-      const body = match.lines
-        .map((line, i) => `${match.file}:${match.contextStart + i}: ${line}`)
+      let body = match.lines
+        .map((line, i) => `  ${match.contextStart + i}: ${line}`)
         .join("\n");
+      if (lastfile !== match.file) {
+        lastfile = match.file
+        body = `\n${match.file}:\n${body}`
+      }
       return body;
     });
-    const result = truncateResult(blocks.join("\n--\n")) 
-    console.log(result)
-    return result
+    return truncateResult(blocks.join("\n")) 
   },
 };

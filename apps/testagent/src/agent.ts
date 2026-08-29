@@ -160,6 +160,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       }
     }
 
+    console.log(toolResults.map((r) => r.content).join("\n"));
     messages.push({ role: "user", content: toolResults });
   }
 }

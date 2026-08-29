@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { IGNORED_DIR_NAMES, resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
+import { filterPath, filterCode } from "../config.ts";
 
 export const lsTool: Tool = {
   name: "ls",
@@ -20,7 +21,7 @@ export const lsTool: Tool = {
     const entries = await readdir(dir, { withFileTypes: true });
     const lines = entries
       .filter((entry) => !IGNORED_DIR_NAMES.has(entry.name))
-      .map((entry) => (entry.isDirectory() ? `${entry.name}/` : entry.name))
+      .map((entry) => (entry.isDirectory() ? `${entry.name}/` : filterPath(entry.name)))
       .sort();
     return truncateResult(lines.join("\n"));
   },

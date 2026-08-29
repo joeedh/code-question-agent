@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolveWorkspacePath, truncateResult, type Tool } from "./types.ts";
+import { filterPath, filterCode } from "../config.ts";
 
 const MAX_LINES = 2000;
 
@@ -33,7 +34,7 @@ export const readTool: Tool = {
     };
     const filePath = resolveWorkspacePath(ctx.workspaceDir, relPath);
     const raw = await readFile(filePath, "utf8");
-    const allLines = raw.split("\n");
+    const allLines = filterCode(raw, filePath).split("\n");
     const start = Math.max(1, startLine ?? 1);
     const requestedEnd = Math.min(allLines.length, endLine ?? allLines.length);
     const cappedEnd = Math.min(requestedEnd, start + MAX_LINES - 1);
@@ -43,8 +44,6 @@ export const readTool: Tool = {
       cappedEnd < requestedEnd
         ? `\n[truncated, showing lines ${start}-${cappedEnd} of ${allLines.length}]`
         : "";
-    const result = truncateResult(body + suffix);
-    console.log(result);
-    return result;
+    return truncateResult(body + suffix);
   },
 };
