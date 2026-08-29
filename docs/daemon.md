@@ -157,10 +157,14 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
 
 - `TSC_LSP_PATH` — optional. Path to a `tsc` binary built with `--lsp --stdio` support (or the
   nightly `tsgo` channel). When unset, `resolveTscPath` (`packages/lsp-bridge/src/resolve.ts`)
-  falls back to an npm/pnpm-installed `typescript` package (7+, which ships `--lsp` support
-  natively) found by walking up from `repoRoot`'s `node_modules`; `main()` exits with a clear
-  error if neither is available. `startDaemon` itself still takes `tscPath` as a required,
-  already-resolved argument — this fallback is a `main()`/CLI-entry-point concern, not
-  `startDaemon`'s.
+  tries, in order: an npm/pnpm-installed `typescript` package (7+, which ships `--lsp` support
+  natively) found by walking up from `repoRoot`'s `node_modules`; then, only when this is
+  itself running from a source checkout of code-question-agent rather than installed as a
+  dependency (`findSelfCheckoutRoot` — walks up from this file's own location to a
+  `package.json` named `code-question-agent`), that checkout's own installed `typescript` —
+  so a target repo with none of its own is still usable during development of this tool.
+  `main()` exits with a clear error if nothing above is available. `startDaemon` itself still
+  takes `tscPath` as a required, already-resolved argument — this fallback is a
+  `main()`/CLI-entry-point concern, not `startDaemon`'s.
 - `CODE_QUESTION_AGENT_DATA_DIR` — overrides the default `~/.code-question-agent` base data
   directory. Mainly for tests, so each test repo gets isolated state.

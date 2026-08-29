@@ -1,8 +1,14 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findInstalledTsc, resolveTscPath } from "../src/resolve.ts";
+
+vi.mock("node:url", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:url")>();
+  return { ...actual, fileURLToPath: vi.fn(actual.fileURLToPath) };
+});
 
 async function writeTypescriptPackage(
   nodeModulesDir: string,
@@ -81,7 +87,17 @@ describe("findInstalledTsc / resolveTscPath", () => {
     );
   });
 
-  it("resolveTscPath throws a clear error when neither is available", () => {
+  it("resolveTscPath falls back to this checkout's own typescript for an unrelated repo", () => {
+    // These tests run from inside the actual code-question-agent checkout, which has its own
+    // `typescript` (7+) installed — exactly the scenario this fallback exists for: `repoDir`
+    // has none of its own, but this tool's own dev install can still answer for it.
+    const resolved = resolveTscPath(repoDir);
+    expect(resolved).toMatch(/typescript[\\/]bin[\\/]tsc$/);
+    expect(resolved).not.toContain(repoDir);
+  });
+
+  it("resolveTscPath throws when TSC_LSP_PATH, a target install, and a self checkout are all unavailable", () => {
+    vi.mocked(fileURLToPath).mockImplementationOnce(() => path.join(repoDir, "fake-resolve.ts"));
     expect(() => resolveTscPath(repoDir)).toThrow(/TSC_LSP_PATH|typescript/);
   });
 });

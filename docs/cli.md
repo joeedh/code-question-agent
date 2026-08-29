@@ -108,7 +108,9 @@ One block per match (definition or reference), separated by a blank line:
   spawned process's stdout to find it) and checks `isAddressLive`.
 - If nothing's listening: resolves a `tsc --lsp` binary via `resolveTscPath(repoRoot)`
   (`@code-question-agent/lsp-bridge`) — `TSC_LSP_PATH` if set, else an npm/pnpm-installed
-  `typescript` (7+) found in the repo's own `node_modules` — then spawns the daemon detached
+  `typescript` (7+) found in the repo's own `node_modules`, else (only when this CLI is itself
+  running from a source checkout of code-question-agent) that checkout's own installed
+  `typescript` — then spawns the daemon detached
   (`detached: true, windowsHide: true, stdio: "ignore"`) with that path passed through as
   `TSC_LSP_PATH` in its environment, `unref()`s it so it outlives this process, and polls
   `isAddressLive` every 150ms until `--timeout` is hit. `resolveTscPath` is called here, before
