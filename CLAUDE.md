@@ -39,6 +39,10 @@ Workspace packages live under `packages/`; runnable apps (the daemon, the CLI) l
   builds the live DB, watches the working tree, drives `lsp-bridge` to keep it current, takes
   checkpoints, and serves queries over a named pipe/Unix domain socket (never TCP); see
   [plan 3](docs/plans/03-daemon-implementation.md).
+- `@code-question-agent/cli` (`apps/cli`) — the `--query` command-line entry point: spawns/
+  connects to the daemon for the current repo, sends a symbol/regexp query, and renders the
+  result as `ideas.md`'s concise block format or `--json`; see
+  [plan 4](docs/plans/04-cli.md).
 
 # Commentlint
 

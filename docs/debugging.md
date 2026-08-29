@@ -175,3 +175,31 @@ capturing a checkpoint from the *live*, open database uses `better-sqlite3`'s ow
 `.backup()` goes through SQLite's online backup API and is safe against a concurrently-open
 connection. A plain file copy is still fine for *promoting* a checkpoint onto `live.sqlite`
 before anything has opened it — the risk is specific to copying out of an already-open DB.
+
+## `apps/cli` (plan 4)
+
+### `Location`'s line/column numbers are 0-indexed, not 1-indexed
+
+`packages/core`'s `Location` (and everything built on it — `ResolvedSymbol`, `Occurrence`)
+carries whatever `apps/daemon/src/query.ts` copied straight out of the `symbols`/`occurrences`
+tables, which in turn is whatever `documentSymbol`/`references` reported — the LSP spec's own
+0-indexed `Position.line`/`.character`. A manual run surfaced this the hard way: `apps/cli`'s
+first snippet-reading implementation assumed `Location.line` was already 1-indexed (matching
+how a human reads a file), so `createSnippetReader` sliced the wrong line — usually one line
+short of the real one, which reads as a subtly-wrong-but-not-obviously-broken empty or
+off-by-one snippet rather than a crash. `apps/cli/src/snippet.ts` now treats every `Location`
+line/column as 0-indexed throughout, and `apps/cli/src/format.ts`'s human formatter is the one
+place that adds 1 for display — `--json` output is left exactly as the daemon reported it,
+since that's meant for programmatic consumption of the same numbers the daemon itself uses.
+
+### A workspace app gains a `"types"` field only once another member imports it
+
+`apps/daemon` had no `"types"` field or `tsconfig.declare.json` through plan 3, per the same
+reasoning as `scripts/build.mjs`'s `declareMember`: "apps aren't imported by other workspace
+members." Plan 4 broke that assumption — `apps/cli` imports `resolveRepoPaths`/`connectIpc`/
+`isAddressLive`/the protocol types straight from `@code-question-agent/daemon` rather than
+duplicating them. Without a `"types"` field, this failed the exact way `packages/db` importing
+`packages/lsp-bridge` did in plan 2 (`TS7016: Could not find a declaration file`) — the fix is
+the same one: add `"types": "./dist/index.d.ts"` to `apps/daemon/package.json` and a
+`tsconfig.declare.json` mirroring `packages/db`'s, so `declareMember` actually runs a
+declaration build for it.

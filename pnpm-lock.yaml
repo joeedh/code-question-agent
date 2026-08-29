@@ -38,6 +38,21 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2))
 
+  apps/cli:
+    dependencies:
+      '@code-question-agent/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@code-question-agent/daemon':
+        specifier: workspace:*
+        version: link:../daemon
+      '@code-question-agent/lsp-bridge':
+        specifier: workspace:*
+        version: link:../../packages/lsp-bridge
+      vscode-jsonrpc:
+        specifier: ^9.0.2
+        version: 9.0.2
+
   apps/daemon:
     dependencies:
       '@code-question-agent/core':

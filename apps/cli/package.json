@@ -1,20 +1,19 @@
 {
-  "name": "@code-question-agent/daemon",
+  "name": "@code-question-agent/cli",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "bin": {
+    "code-question-agent": "./dist/index.js"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@code-question-agent/core": "workspace:*",
-    "@code-question-agent/db": "workspace:*",
+    "@code-question-agent/daemon": "workspace:*",
     "@code-question-agent/lsp-bridge": "workspace:*",
-    "chokidar": "^4.0.3",
-    "kysely": "^0.28.7",
-    "vscode-jsonrpc": "^9.0.2",
-    "vscode-languageserver-protocol": "^3.18.3"
+    "vscode-jsonrpc": "^9.0.2"
   }
 }
