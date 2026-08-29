@@ -106,12 +106,19 @@ One block per match (definition or reference), separated by a blank line:
 - `ensureDaemon(repoRoot, opts)` computes the deterministic IPC address for `repoRoot` via
   `resolveRepoPaths` (same hash-of-realpath scheme the daemon uses — no need to read a
   spawned process's stdout to find it) and checks `isAddressLive`.
-- If nothing's listening: spawns the daemon detached (`detached: true, windowsHide: true,
-  stdio: "ignore"`), `unref()`s it so it outlives this process, then polls
-  `isAddressLive` every 150ms until `--timeout` is hit.
-- Requires `TSC_LSP_PATH` in the environment (path to a `tsc` binary built with `--lsp`
-  support) — only needed to *spawn* a daemon; connecting to an already-running one doesn't
-  need it.
+- If nothing's listening: resolves a `tsc --lsp` binary via `resolveTscPath(repoRoot)`
+  (`@code-question-agent/lsp-bridge`) — `TSC_LSP_PATH` if set, else an npm/pnpm-installed
+  `typescript` (7+) found in the repo's own `node_modules` — then spawns the daemon detached
+  (`detached: true, windowsHide: true, stdio: "ignore"`) with that path passed through as
+  `TSC_LSP_PATH` in its environment, `unref()`s it so it outlives this process, and polls
+  `isAddressLive` every 150ms until `--timeout` is hit. `resolveTscPath` is called here, before
+  spawning, rather than left to the daemon's own `main()` to resolve — the daemon runs detached
+  with `stdio: "ignore"`, so an error thrown after spawning would be invisible and just show up
+  as a `--timeout` "timed out waiting for the daemon to start listening" instead of a clear
+  message.
+- Only needed to *spawn* a daemon; connecting to an already-running one needs neither
+  `TSC_LSP_PATH` nor an installed `typescript`.
+- `-v`'s `daemon` tag logs which `tscPath` a spawn resolved to.
 - Once connected, the CLI never sends `shutdown` — the daemon keeps running for the next
   invocation.
 

@@ -131,6 +131,21 @@ carrying that request is still open, waiting for the handler to return, which is
 down. A `shutdown()` called directly (not through the IPC handler — a `SIGTERM`, or a test
 calling `handle.shutdown()`) has no such connection to wait on and can `await` it directly.
 
+### `shutdown()` disposing the bridge before the occurrence queue drains can hang a long time
+
+`startDaemon`'s `shutdown()` awaited `coldIndex` (the eager per-file scan) and then went
+straight to `bridge.dispose()`, skipping `indexer.waitForIdle()` — the background queue of one
+`references()` call per symbol, still running after `coldIndex` resolves. `dispose()` sends its
+own `shutdown` request over the same JSON-RPC connection those queued calls are using, so if the
+queue is still busy, the request just waits behind whatever backlog is ahead of it — observed
+taking well over a minute against this repo's own 97 TypeScript files, never confirmed to
+resolve on its own. `coldIndex` finishing (`status.indexing` going `false`) looked like the
+daemon was idle, which made the hang easy to miss and easy to blame on something else — it
+first surfaced while adding `packages/lsp-bridge/src/resolve.ts`, and reproduced identically
+against a directly-spawned `tsc --lsp` binary, so it has nothing to do with that change. Fixed
+by closing the watcher (so nothing enqueues more work) and awaiting `indexer.waitForIdle()`
+before disposing the bridge.
+
 ### Hierarchical `documentSymbol` reports a named import as a symbol too
 
 `caller.ts` (`packages/lsp-bridge/test/fixtures/basic/caller.ts`) does

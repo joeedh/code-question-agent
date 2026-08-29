@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { type Report } from "@code-question-agent/core";
 import { openDatabase, reconcile } from "@code-question-agent/db";
-import { LspBridge } from "@code-question-agent/lsp-bridge";
+import { LspBridge, resolveTscPath } from "@code-question-agent/lsp-bridge";
 import { createCheckpointManager } from "./checkpoints.ts";
 import { createIndexer } from "./indexer.ts";
 import { startIpcServer } from "./ipc.ts";
@@ -90,7 +90,12 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
     if (shuttingDown) return;
     shuttingDown = true;
     await coldIndex.catch(() => undefined);
+    // Stop the watcher (no more indexFile/removeFile calls can enqueue occurrence work) before
+    // draining the queue those calls already filled — otherwise bridge.dispose() below queues
+    // its own shutdown request behind whatever occurrence lookups are still in flight, which
+    // can leave it waiting a long time for the LSP server to work through the backlog first.
     await watcher.close();
+    await indexer.waitForIdle().catch(() => undefined);
     await ipc.close();
     await bridge.dispose().catch(() => undefined);
     await db.destroy();
@@ -122,13 +127,15 @@ export async function startDaemon(options: DaemonOptions): Promise<DaemonHandle>
 }
 
 async function main(): Promise<void> {
-  const tscPath = process.env.TSC_LSP_PATH;
-  if (!tscPath) {
-    console.error("TSC_LSP_PATH must point at a tsc binary built with `--lsp` support.");
+  const repoRoot = process.argv[2] ?? process.cwd();
+  let tscPath: string;
+  try {
+    tscPath = resolveTscPath(repoRoot);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
     return;
   }
-  const repoRoot = process.argv[2] ?? process.cwd();
   const baseDataDir = process.env.CODE_QUESTION_AGENT_DATA_DIR;
   const handle = await startDaemon({ repoRoot, tscPath, baseDataDir });
   console.log(`daemon listening at ${handle.ipcAddress}`);

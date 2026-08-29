@@ -141,8 +141,12 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
 ## Shutdown
 
 - `shutdown()` is idempotent (`shuttingDown` guard) and runs in this order: await the
-  cold-index promise, close the watcher, close the IPC server, dispose the LSP bridge, close
-  the DB, delete `daemon.json`.
+  cold-index promise, close the watcher, await the indexer's occurrence-indexing queue
+  (`waitForIdle`), close the IPC server, dispose the LSP bridge, close the DB, delete
+  `daemon.json`. The watcher closes before the queue is awaited so nothing enqueues more work
+  while it drains; disposing the bridge first would queue its own `shutdown` request behind
+  whatever occurrence lookups are still in flight (`docs/debugging.md`'s "`shutdown()`
+  disposing the bridge before the occurrence queue drains can hang a long time").
 - Reached via `SIGINT`/`SIGTERM` (`main()`, standalone process) or the `shutdown` IPC request
   (currently nothing in this workspace sends it — the CLI never shuts the daemon down).
 - A force-killed daemon (`SIGKILL`, no cleanup handlers run) leaves no state that blocks a
@@ -151,6 +155,12 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
 
 ## Environment variables
 
-- `TSC_LSP_PATH` — required. Path to a `tsc` binary built with `--lsp --stdio` support.
+- `TSC_LSP_PATH` — optional. Path to a `tsc` binary built with `--lsp --stdio` support (or the
+  nightly `tsgo` channel). When unset, `resolveTscPath` (`packages/lsp-bridge/src/resolve.ts`)
+  falls back to an npm/pnpm-installed `typescript` package (7+, which ships `--lsp` support
+  natively) found by walking up from `repoRoot`'s `node_modules`; `main()` exits with a clear
+  error if neither is available. `startDaemon` itself still takes `tscPath` as a required,
+  already-resolved argument — this fallback is a `main()`/CLI-entry-point concern, not
+  `startDaemon`'s.
 - `CODE_QUESTION_AGENT_DATA_DIR` — overrides the default `~/.code-question-agent` base data
   directory. Mainly for tests, so each test repo gets isolated state.

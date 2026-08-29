@@ -8,6 +8,7 @@ import {
   type RepoPaths,
   type StatusResult,
 } from "@code-question-agent/daemon";
+import { resolveTscPath } from "@code-question-agent/lsp-bridge";
 import { type MessageConnection } from "vscode-jsonrpc/node";
 import { type CliOptions } from "./args.ts";
 import { createVerboseLogger } from "./verbose.ts";
@@ -33,13 +34,7 @@ async function waitUntilLive(address: string, timeoutMs: number): Promise<void> 
  * `resolveRepoPaths` computes the same deterministic IPC address the daemon will bind to, so
  * the caller doesn't need to read the spawned process's stdout to find it.
  */
-function spawnDaemon(repoRoot: string): void {
-  const tscPath = process.env.TSC_LSP_PATH;
-  if (!tscPath) {
-    throw new Error(
-      "TSC_LSP_PATH must point at a tsc binary built with `--lsp` support to start the daemon.",
-    );
-  }
+function spawnDaemon(repoRoot: string, tscPath: string): void {
   const daemonEntry = fileURLToPath(import.meta.resolve("@code-question-agent/daemon"));
   const child = spawn(process.execPath, [daemonEntry, repoRoot], {
     detached: true,
@@ -65,8 +60,9 @@ export async function ensureDaemon(repoRoot: string, opts: CliOptions): Promise<
   if (await isAddressLive(paths.ipcAddress)) {
     logger.log("daemon", `connected to existing daemon at ${paths.ipcAddress}`);
   } else {
-    logger.log("daemon", `spawning daemon for ${paths.repoRoot}`);
-    spawnDaemon(paths.repoRoot);
+    const tscPath = resolveTscPath(paths.repoRoot);
+    logger.log("daemon", `spawning daemon for ${paths.repoRoot} using tsc at ${tscPath}`);
+    spawnDaemon(paths.repoRoot, tscPath);
     await waitUntilLive(paths.ipcAddress, opts.timeoutMs);
     logger.log("daemon", `daemon listening at ${paths.ipcAddress}`);
   }
