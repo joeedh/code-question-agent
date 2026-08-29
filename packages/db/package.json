@@ -1,0 +1,20 @@
+{
+  "name": "@code-question-agent/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@code-question-agent/lsp-bridge": "workspace:*",
+    "better-sqlite3": "^12.4.1",
+    "kysely": "^0.28.7",
+    "vscode-languageserver-protocol": "^3.18.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
+  }
+}

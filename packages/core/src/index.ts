@@ -23,12 +23,39 @@ export interface SearchQuery extends QueryBase<"search-query"> {
 
 export type Query = SymbolQuery | SearchQuery;
 
+export interface Location {
+  file: string;
+  line: number;
+  col: number;
+  endLine: number;
+  endCol: number;
+}
+
+export interface ResolvedSymbol extends Location {
+  id: number;
+  name: string;
+  kind: string;
+}
+
+export interface Occurrence extends Location {
+  kind: "read" | "call";
+}
+
 export interface SymbolInfo extends Report<"symbol-info"> {
   query: Query;
   info: string;
+  symbols: ResolvedSymbol[];
 }
 
 export interface WhatRefs extends Report<"what-refs"> {
   query: Query;
-  references: SymbolInfo[];
+  symbol: ResolvedSymbol;
+  references: Occurrence[];
+}
+
+/** The chain of enclosing named scopes from a symbol up to the script root, nearest first. */
+export interface EnclosingScope extends Report<"enclosing-scope"> {
+  query: Query;
+  symbol: ResolvedSymbol;
+  trace: ResolvedSymbol[];
 }

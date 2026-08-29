@@ -24,15 +24,21 @@
 
 # Packages
 
-Workspace packages live under `packages/`; runnable apps (the daemon, the CLI) will live
-under `apps/` once plan 3 and plan 4 add them. Keep this list current as packages are added,
-renamed, or removed.
+Workspace packages live under `packages/`; runnable apps (the daemon, the CLI) live under
+`apps/`. Keep this list current as packages are added, renamed, or removed.
 
 - `@code-question-agent/core` — shared types (`Query`, `Report`, and friends) used across the
   rest of the workspace.
 - `@code-question-agent/lsp-bridge` — spawns TypeScript's native LSP server and speaks LSP to
   it (handshake, requests); see
   [plan 1](docs/plans/01-build-system-and-lsp-bridge.md).
+- `@code-question-agent/db` — SQLite-backed storage (Kysely + `better-sqlite3`): schema,
+  migrations, per-file indexing from `lsp-bridge` response shapes, and the cache-identity/
+  checkpoint scheme; see [plan 2](docs/plans/02-database-model.md).
+- `@code-question-agent/daemon` (`apps/daemon`) — the long-running process: promotes/cold-
+  builds the live DB, watches the working tree, drives `lsp-bridge` to keep it current, takes
+  checkpoints, and serves queries over a named pipe/Unix domain socket (never TCP); see
+  [plan 3](docs/plans/03-daemon-implementation.md).
 
 # Commentlint
 
