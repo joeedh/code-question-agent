@@ -21,6 +21,14 @@
   already learned.
 - The overall design lives in [`docs/initialDesign.md`](docs/initialDesign.md); the plan
   sequence lives in [`docs/initialTaskList.md`](docs/initialTaskList.md).
+- Per-package reference docs: [`docs/cli.md`](docs/cli.md) (`apps/cli`),
+  [`docs/daemon.md`](docs/daemon.md) (`apps/daemon`), [`docs/db.md`](docs/db.md)
+  (`@code-question-agent/db`).
+- Prefer bullet points over prose paragraphs in design docs, plans, and reports. A bulleted
+  fact is cheaper to scan, cheaper to update in isolation, and cheaper to load into an LLM's
+  context than the same fact buried in a paragraph. Reserve paragraph prose for where the
+  connective logic between sentences is itself the content (a design rationale walking through
+  a tradeoff), not for reference material that's really a list of independent facts.
 
 # Packages
 
