@@ -12,6 +12,7 @@ export let theConfig: TestAgentConfig = {
   enabledTools: [],
   toolLimits: {},
   maxTokenBudget: 0,
+  stripAllDocs: {},
 };
 
 export interface TestAgentConfig {
