@@ -1,6 +1,7 @@
 import { type TestAgentConfig, type ToolName } from "./config.ts";
 import { runCli } from "./tools/cli.ts";
 import { TOOL_REGISTRY } from "./tools/registry.ts";
+import Path from 'node:path';
 
 function describeTool(name: ToolName, config: TestAgentConfig): string {
   const tool = TOOL_REGISTRY[name];
@@ -20,6 +21,8 @@ export async function buildSystemPrompt(
   config: TestAgentConfig,
 ): Promise<string> {
   const sections: string[] = [];
+
+  workspaceDir = Path.resolve(workspaceDir)
 
   if (tools.includes("cli")) {
     const { output } = await runCli(["--llm-help"], workspaceDir);
@@ -50,5 +53,6 @@ If making a web server serve at 0.0.0.0:1234 .
     ["\nAvailable tools:", ...tools.map((name) => describeTool(name, config))].join("\n"),
   );
 
+  console.log(sections.join('\n') + '\n\n')
   return sections.join("\n");
 }

@@ -30,7 +30,7 @@ export const bashTool: Tool = {
 
     let maxChars = truncateBytes === undefined || truncateBytes <= 0 ? undefined : truncateBytes;
 
-    const root = ctx.workspaceDir;
+    const root = Path.resolve(ctx.workspaceDir);
     const tempPath = Path.join(process.cwd(), "temp", (Math.random() * 10000).toFixed(1) + ".sh");
 
     // ensure directories exist
@@ -38,12 +38,14 @@ export const bashTool: Tool = {
     fs.mkdirSync(root, { recursive: true });
 
     fs.writeFileSync(tempPath, script);
+    process.stdout.write('running ' + script.slice(0, 500) + '\n');
+
     let result = ''
     try {
-      result = child_process.execSync(`bash ${tempPath}`, { encoding: "utf-8", cwd: root, timeout: 20000 });
+      result = child_process.execSync(`bash ${tempPath}`, { encoding: "utf-8", cwd: root, timeout: 40000 });
     } catch (error: any) {
       if (error.code === 'ETIMEDOUT') {
-        result = `[Command timed out after 20 seconds]`
+        result = `[Command timed out after 40 seconds]`
       } else {
         result = `[Command failed: ${error.message}]`
       }

@@ -134,7 +134,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
-          content: "refused: session token budget exhausted",
+          content: "refused: session token budget exhausted, write a summary of your work for another agent to continue later",
           is_error: true,
         });
         continue;
