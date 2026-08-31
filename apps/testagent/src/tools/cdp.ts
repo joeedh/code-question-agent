@@ -1,9 +1,9 @@
 import { truncateResult, type Tool } from "./types.ts";
 
-const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://127.0.0.1:9222";
-const TIMEOUT_MS = 15_000;
+export const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://0.0.0.0:9222";
+export const TIMEOUT_MS = 15_000;
 
-interface CdpTarget {
+export interface CdpTarget {
   id: string;
   title: string;
   url: string;
@@ -11,7 +11,7 @@ interface CdpTarget {
   webSocketDebuggerUrl?: string;
 }
 
-async function listTargets(baseUrl: string): Promise<CdpTarget[]> {
+export async function listTargets(baseUrl: string): Promise<CdpTarget[]> {
   const res = await fetch(`${baseUrl}/json/list`);
   if (!res.ok) throw new Error(`CDP /json/list returned ${res.status}`);
   return (await res.json()) as CdpTarget[];
@@ -126,6 +126,3 @@ export const cdpTool: Tool = {
     throw new Error(`unknown action ${JSON.stringify(action)}`);
   },
 };
-
-const t = await listTargets(DEFAULT_BASE_URL);
-console.log(t)

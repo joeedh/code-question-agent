@@ -5,7 +5,7 @@
   },
   "remoteUser": "node",
 
-  "runArgs": ["--security-opt=no-new-privileges", "--network=host"],
+  "runArgs": ["--security-opt=no-new-privileges", "--network=host", "--add-host=host.docker.internal:host-gateway"],
 
   "customizations": {
     "vscode": {
