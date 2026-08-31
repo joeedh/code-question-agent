@@ -5,10 +5,7 @@
   },
   "remoteUser": "node",
 
-  // Standard container isolation from the host (own filesystem, PID/network
-  // namespaces, non-root user); network stays enabled since pnpm install
-  // needs it.
-  "runArgs": ["--security-opt=no-new-privileges"],
+  "runArgs": ["--security-opt=no-new-privileges", "--network=host"],
 
   "customizations": {
     "vscode": {
@@ -20,9 +17,6 @@
     }
   },
 
-  // Skipped on container restart, since .git already exists by then. The
-  // safe.directory exception is needed because .host-src is root-owned (via
-  // the 9p/NTFS bind mount) while this runs as node.
   "onCreateCommand": "createCommand.sh",
   "postCreateCommand": ""
 }
