@@ -15,6 +15,9 @@ function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<
     });
 
     let buf = '';
+    
+    child.stdout.setEncoding('utf-8');
+    child.stderr.setEncoding('utf-8');
 
     // Stream stdout as data arrives
     child.stdout.on('data', (data) => {
@@ -41,7 +44,7 @@ function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<
       if (code !== 0) {
         return reject(new Error(`Process exited with code ${code}`));
       }
-      resolve();
+      resolve(buf);
     });
   });
 }
@@ -80,11 +83,12 @@ export const bashTool: Tool = {
     process.stdout.write('running ' + script.slice(0, 500) + '\n');
 
     let result = ''
+    const timeout = 40
     try {
-      result = child_process.execSync(`bash ${tempPath}`, { encoding: "utf-8", cwd: root, timeout: 40000 });
+      result = await runScriptAsync(`bash ${tempPath}`, root, timeout*1000);
     } catch (error: any) {
       if (error.code === 'ETIMEDOUT') {
-        result = `[Command timed out after 40 seconds]`
+        result = `[Command timed out after ${timeout} seconds]`
       } else {
         result = `[Command failed: ${error.message}]`
       }

@@ -115,7 +115,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         .map((block) => block.text)
         .join("\n");
       if (finalText.length > 0) {
-        fs.writeFileSync(`${workspaceDir}/finalTurns.md`, finalText + "\n\n====== End Turn ======\n\n");
+        fs.appendFileSync(`${workspaceDir}/finalTurns.md`, finalText + "\n\n====== End Turn ======\n\n");
       }
       return response;
     }
