@@ -144,8 +144,12 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       }
 
       callCounts[name] = (callCounts[name] ?? 0) + 1;
+      let limitMessage = ''
+      if (limit !== -1 && callCounts[name]! >= Math.max(~~(limit*0.75), 0)) {
+        limitMessage = `\n\n[you have ${limit-callCounts[name]!} ${name} calls remaining]`;
+      }
       try {
-        const output = await TOOL_REGISTRY[name].run(block.input, ctx);
+        const output = (await TOOL_REGISTRY[name].run(block.input, ctx)) + limitMessage;
         await transcript.appendToolCall(name, block.input, output, false, callCounts[name]!);
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: output });
       } catch (error) {
@@ -154,7 +158,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
-          content: message,
+          content: message + limitMessage,
           is_error: true,
         });
       }
