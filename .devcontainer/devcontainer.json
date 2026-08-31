@@ -5,14 +5,6 @@
   },
   "remoteUser": "node",
 
-  // The workspace lives on a named volume (ext4, inside Docker Desktop's WSL
-  // data distro) instead of a bind mount of the NTFS checkout, so file I/O
-  // avoids the slow 9p bridge WSL2 uses to reach /mnt/c. The Dockerfile
-  // pre-creates the mount point owned by node, so the volume comes up
-  // node-writable via Docker's copy-up on first mount.
-  "workspaceMount": "source=code-question-agent-src,target=/workspaces/code-question-agent,type=volume",
-  "workspaceFolder": "/workspaces/code-question-agent",
-
   // Standard container isolation from the host (own filesystem, PID/network
   // namespaces, non-root user); network stays enabled since pnpm install
   // needs it.
@@ -24,23 +16,13 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "vitest.explorer"
-      ],
-      "settings": {
-        "typescript.tsdk": "node_modules/typescript/lib"
-      }
+      ]
     }
   },
-
-  // Read-only source for the one-time clone below; nothing else touches it,
-  // so the NTFS bridge is only paid for once instead of on every file access.
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/workspaces/.host-src,type=bind,readonly",
-    "source=code-question-agent-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
-  ],
 
   // Skipped on container restart, since .git already exists by then. The
   // safe.directory exception is needed because .host-src is root-owned (via
   // the 9p/NTFS bind mount) while this runs as node.
-  "onCreateCommand": "git config --global --add safe.directory /workspaces/.host-src/.git && if [ ! -d .git ]; then git clone /workspaces/.host-src . ; fi",
-  "postCreateCommand": "CI=true pnpm install"
+  "onCreateCommand": "createCommand.sh",
+  "postCreateCommand": ""
 }
