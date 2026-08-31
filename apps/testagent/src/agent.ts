@@ -87,8 +87,6 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   let tokensUsed = 0;
   let truncated = false;
 
-  let lastMessage = '';
-
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
     const response = await client.messages.create({
@@ -112,8 +110,12 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         callCounts,
         truncated,
       );
-      if (lastMessage.length > 0) {
-        fs.appendFileSync(`${workspaceDir}/finalTurns.md`, lastMessage + '\n\n====== End Turn ======\n\n');
+      const finalText = response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === "text")
+        .map((block) => block.text)
+        .join("\n");
+      if (finalText.length > 0) {
+        fs.writeFileSync(`${workspaceDir}/finalTurns.md`, finalText + "\n\n====== End Turn ======\n\n");
       }
       return response;
     }
@@ -156,7 +158,6 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       }
       try {
         const output = (await TOOL_REGISTRY[name].run(block.input, ctx)) + limitMessage;
-        lastMessage = output;
         await transcript.appendToolCall(name, block.input, output, false, callCounts[name]!);
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: output });
       } catch (error) {

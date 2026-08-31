@@ -7,6 +7,45 @@ import { fileCache } from "../utils.ts";
 import child_process from "node:child_process";
 import Path from "path";
 
+function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = child_process.spawn('bash', [tempPath], {
+      cwd: root,
+      timeout,
+    });
+
+    let buf = '';
+
+    // Stream stdout as data arrives
+    child.stdout.on('data', (data) => {
+      process.stdout.write(data);
+      buf += data;
+    });
+
+    // Stream stderr as data arrives
+    child.stderr.on('data', (data) => {
+      process.stderr.write(data);
+      buf += data;
+    });
+
+    // Handle spawn/system-level errors (e.g. timeout or command not found)
+    child.on('error', (err) => {
+      reject(err);
+    });
+
+    // Handle process completion
+    child.on('close', (code, signal) => {
+      if (signal === 'SIGTERM') {
+        return reject(new Error('Process timed out after 40000ms'));
+      }
+      if (code !== 0) {
+        return reject(new Error(`Process exited with code ${code}`));
+      }
+      resolve();
+    });
+  });
+}
+
 export const bashTool: Tool = {
   name: "bash",
   description: `Executes a bash script you provide, cwd always starts out at the workspace root.`,
