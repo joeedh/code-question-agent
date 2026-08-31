@@ -87,13 +87,13 @@ export const cdpTool: Tool = {
   description:
     'Talks to a browser over the Chrome DevTools Protocol. `action: "targets"` lists open ' +
     'pages/tabs; `action: "eval"` runs a JS expression in a page via Runtime.evaluate and ' +
-    "returns its value. Connects to CDP_URL (default http://127.0.0.1:9222); pass `baseUrl` " +
+    `returns its value. Connects to CDP_URL (default ${DEFAULT_BASE_URL}); pass \`baseUrl\` ` +
     "to override per call.",
   inputSchema: {
     type: "object",
     properties: {
       action: { type: "string", enum: ["targets", "eval"] },
-      baseUrl: { type: "string", description: "CDP HTTP endpoint, e.g. http://127.0.0.1:9222." },
+      baseUrl: { type: "string", description: `CDP HTTP endpoint, e.g. ${DEFAULT_BASE_URL}.` },
       targetId: {
         type: "string",
         description: "Target id from `targets` to eval in. Defaults to the first open page.",
@@ -126,3 +126,6 @@ export const cdpTool: Tool = {
     throw new Error(`unknown action ${JSON.stringify(action)}`);
   },
 };
+
+const t = await listTargets(DEFAULT_BASE_URL);
+console.log(t)
