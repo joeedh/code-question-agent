@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { isCode, stripComments } from "./utils.ts";
 
-export const TOOL_NAMES = ["cli", "grep", "read", "ls"] as const;
+export const TOOL_NAMES = ["cli", "grep", "read", "ls", "cdp"] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
 
 export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;

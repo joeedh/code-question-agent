@@ -1,4 +1,5 @@
 import { type ToolName } from "../config.ts";
+import { cdpTool } from "./cdp.ts";
 import { cliTool } from "./cli.ts";
 import { grepTool } from "./grep.ts";
 import { lsTool } from "./ls.ts";
@@ -10,6 +11,7 @@ export const TOOL_REGISTRY: Record<ToolName, Tool> = {
   grep: grepTool,
   read: readTool,
   ls: lsTool,
+  cdp: cdpTool,
 };
 
 export { resolveToolSelection } from "../config.ts";

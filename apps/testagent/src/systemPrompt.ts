@@ -27,15 +27,16 @@ export async function buildSystemPrompt(
   }
 
   sections.push(
-    `You are a test/verification agent inspecting the repository at ${workspaceDir}. ` +
-      "Use the tools below to answer the task. Each tool has a limited number of calls for " +
-      "this session and the session has a total token budget — be economical, and prefer " +
-      "fewer, well-targeted calls over broad exploration.",
+    `You are a test/verification agent inspecting the repository at ${workspaceDir}.`,
   );
+
+  sections.push("Use the tools below to answer the task. Each tool has a limited number of calls for " +
+      "this session and the session has a total token budget — be economical, and prefer " +
+      "fewer, well-targeted calls over broad exploration.")
 
   sections.push(
-    ["Available tools:", ...tools.map((name) => describeTool(name, config))].join("\n"),
+    ["\nAvailable tools:", ...tools.map((name) => describeTool(name, config))].join("\n"),
   );
 
-  return sections.join("\n\n");
+  return sections.join("\n");
 }

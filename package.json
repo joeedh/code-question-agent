@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "vitest run",
-    "testagent": "pnpm build && node apps/testagent/dist/index.js"
+    "testagent": "pnpm build && node apps/testagent/dist/index.js",
+    "electron": "pnpm build && pnpm --filter @code-question-agent/electronshell run start"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

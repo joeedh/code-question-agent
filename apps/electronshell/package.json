@@ -1,0 +1,14 @@
+{
+  "name": "@code-question-agent/electronshell",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^38.4.0"
+  }
+}
