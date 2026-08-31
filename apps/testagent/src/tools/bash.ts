@@ -38,8 +38,16 @@ export const bashTool: Tool = {
     fs.mkdirSync(root, { recursive: true });
 
     fs.writeFileSync(tempPath, script);
-    const result = child_process.execSync(`bash ${tempPath}`, { encoding: "utf-8", cwd: root });
-
+    let result = ''
+    try {
+      result = child_process.execSync(`bash ${tempPath}`, { encoding: "utf-8", cwd: root, timeout: 20000 });
+    } catch (error: any) {
+      if (error.code === 'ETIMEDOUT') {
+        result = `[Command timed out after 20 seconds]`
+      } else {
+        result = `[Command failed: ${error.message}]`
+      }
+    }
     return truncateResult(result, maxChars);
   },
 };
