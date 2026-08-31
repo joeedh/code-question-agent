@@ -33,8 +33,8 @@ export function resolveWorkspacePath(workspaceDir: string, userPath: string): st
 
 const MAX_RESULT_CHARS = 20_000;
 
-/** Truncates `text` to `MAX_RESULT_CHARS`, protecting the session's token budget from one huge result. */
-export function truncateResult(text: string): string {
-  if (text.length <= MAX_RESULT_CHARS) return text;
-  return `${text.slice(0, MAX_RESULT_CHARS)}\n[truncated, ${text.length} total chars]`;
+/** Truncates `text` to `maxChars`, protecting the session's token budget from one huge result. */
+export function truncateResult(text: string, maxChars = MAX_RESULT_CHARS): string {
+  if (text.length <= maxChars) return text;
+  return `${text.slice(0, maxChars)}\n[truncated, ${text.length} total chars]`;
 }

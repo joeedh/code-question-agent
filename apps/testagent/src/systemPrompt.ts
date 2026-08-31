@@ -26,13 +26,21 @@ export async function buildSystemPrompt(
     sections.push(output.trim());
   }
 
-  sections.push(
-    `You are a test/verification agent inspecting the repository at ${workspaceDir}.`,
-  );
+  if (tools.includes("bash")) {
+    sections.push(
+      `You are a software coding agent at ${workspaceDir}.`,
+    );
+  } else {
+    sections.push(
+      `You are a test/verification agent inspecting the repository at ${workspaceDir}.`,
+    );
+  }
 
-  sections.push("Use the tools below to answer the task. Each tool has a limited number of calls for " +
-      "this session and the session has a total token budget — be economical, and prefer " +
-      "fewer, well-targeted calls over broad exploration.")
+  sections.push(
+    "Use the tools below to answer the task. Each tool has a limited number of calls for " +
+    "this session and the session has a total token budget — be economical, and prefer " +
+    "fewer, well-targeted calls over broad exploration.",
+  );
 
   sections.push(
     ["\nAvailable tools:", ...tools.map((name) => describeTool(name, config))].join("\n"),
