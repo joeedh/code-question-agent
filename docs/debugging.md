@@ -3,6 +3,23 @@
 Lessons from bugs with a non-obvious cause, kept here so the next session
 starts from what was already learned.
 
+## Chrome DevTools Protocol: 500 from `host.docker.internal`
+
+See `docs/cdpSetup.md` for the full setup. Connecting to Electron/Chromium's
+CDP port through Docker Desktop's `host.docker.internal` returns:
+
+```
+500 Host header is specified and is not an IP address or localhost.
+```
+
+The TCP connection succeeds — this isn't a firewall or networking failure.
+Chromium's DevTools HTTP server rejects any `Host` header that isn't
+`localhost` or a literal IP, as DNS-rebinding protection, and
+`host.docker.internal` is a hostname. Fix: resolve the hostname to a literal
+IP client-side and rewrite the request to use that IP (done in
+`apps/testagent/src/tools/cdp.ts`'s `resolveHostLiteral()`), rather than
+trying to work around it on the Chromium/Electron side.
+
 ## The TypeScript 7 LSP server (`tsc --lsp --stdio`)
 
 Findings from `packages/lsp-bridge/test/lsp-bridge.test.ts`, which drives the
