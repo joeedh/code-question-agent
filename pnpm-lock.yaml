@@ -17,7 +17,7 @@ importers:
         specifier: 3.3.0-dev
         version: 3.3.0-dev
       '@types/node':
-        specifier: ^24.0.0
+        specifier: ^24.13.3
         version: 24.13.3
       comment-lint:
         specifier: ^0.3.4
@@ -101,6 +101,10 @@ importers:
       '@code-question-agent/cli':
         specifier: workspace:*
         version: link:../cli
+    devDependencies:
+      '@types/node':
+        specifier: ^24.13.3
+        version: 24.13.3
 
   packages/core: {}
 

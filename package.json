@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cli" : "node apps/cli/dist/index.js",
+    "cli": "node apps/cli/dist/index.js",
     "build": "node scripts/build.mjs",
     "clean": "node scripts/build.mjs clean",
     "lint": "pnpm run lint:eslint && pnpm run lint:prose",
@@ -19,7 +19,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@pathtx/prettier": "3.3.0-dev",
-    "@types/node": "^24.0.0",
+    "@types/node": "^24.13.3",
     "comment-lint": "^0.3.4",
     "esbuild": "^0.28.2",
     "eslint": "^10.9.1",
