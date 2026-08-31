@@ -52,6 +52,29 @@ function usageTokens(usage: Anthropic.Usage): number {
   return usage.input_tokens + usage.output_tokens + (usage.cache_creation_input_tokens ?? 0);
 }
 
+type CacheableBlock = { cache_control?: Anthropic.CacheControlEphemeral };
+
+/**
+ * Moves the conversation's cache breakpoint onto the last content block of the last message,
+ * clearing wherever it was previously. Without this, the growing tool-use history is
+ * reprocessed uncached on every turn since only `system` and the tool defs carry breakpoints.
+ */
+function moveCacheBreakpoint(
+  messages: Anthropic.MessageParam[],
+  previous: CacheableBlock | undefined,
+): CacheableBlock | undefined {
+  if (previous) {
+    delete previous.cache_control;
+  }
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || typeof lastMessage.content === "string" || lastMessage.content.length === 0) {
+    return undefined;
+  }
+  const lastBlock = lastMessage.content[lastMessage.content.length - 1] as CacheableBlock;
+  lastBlock.cache_control = { type: "ephemeral" };
+  return lastBlock;
+}
+
 export interface RunSessionOptions {
   client: Anthropic;
   config: TestAgentConfig;
@@ -80,15 +103,19 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   const system: Anthropic.TextBlockParam[] = [
     { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
   ];
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: goal }];
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: [{ type: "text", text: goal }] },
+  ];
   await transcript.appendTurn("user", goal);
 
   const callCounts: Record<string, number> = Object.fromEntries(tools.map((t) => [t, 0]));
   let tokensUsed = 0;
   let truncated = false;
+  let cachedBlock: CacheableBlock | undefined;
 
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
+    cachedBlock = moveCacheBreakpoint(messages, cachedBlock);
     console.log('waiting for model...')
     const response = await client.messages.create({
       model,

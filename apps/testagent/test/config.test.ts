@@ -68,6 +68,7 @@ describe("resolveToolSelection", () => {
     enabledTools: ["cli", "grep"],
     toolLimits: { cli: 5, grep: -1 },
     maxTokenBudget: -1,
+    stripAllDocs: {},
   };
 
   it("returns config.enabledTools when --tools is omitted", () => {

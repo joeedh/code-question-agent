@@ -86,6 +86,7 @@ describe("runSession", () => {
       enabledTools: ["ls"],
       toolLimits: { ls: 1 },
       maxTokenBudget: -1,
+      stripAllDocs: {},
     };
 
     await runSession({
@@ -126,6 +127,7 @@ describe("runSession", () => {
       enabledTools: ["ls"],
       toolLimits: { ls: -1 },
       maxTokenBudget: 100,
+      stripAllDocs: {},
     };
 
     const response = await runSession({
@@ -158,6 +160,7 @@ describe("runSession", () => {
       enabledTools: ["ls", "read"],
       toolLimits: { ls: -1, read: -1 },
       maxTokenBudget: -1,
+      stripAllDocs: {},
     };
 
     await runSession({
@@ -177,5 +180,55 @@ describe("runSession", () => {
     const tools = request!.tools as Anthropic.Tool[];
     expect(tools[0]!.cache_control).toBeUndefined();
     expect(tools[1]!.cache_control).toEqual({ type: "ephemeral" });
+  });
+
+  it("moves the cache breakpoint onto the growing conversation each turn", async () => {
+    const responses = [toolUseResponse("call1", "ls", {}), textResponse("done")];
+    const requests: Anthropic.MessageCreateParams[] = [];
+    const client = {
+      messages: {
+        create: async (params: Anthropic.MessageCreateParams) => {
+          requests.push(structuredClone(params));
+          return responses.shift()!;
+        },
+      },
+    } as unknown as Anthropic;
+
+    const config: TestAgentConfig = {
+      enabledTools: ["ls"],
+      toolLimits: { ls: -1 },
+      maxTokenBudget: -1,
+      stripAllDocs: {},
+    };
+
+    await runSession({
+      client,
+      config,
+      tools: ["ls"],
+      systemPrompt: "system",
+      goal: "list files",
+      workspaceDir,
+      transcript: fakeTranscript(),
+      onTurn: () => {},
+    });
+
+    // First request: only the user goal in `messages`, so the breakpoint lands there.
+    const firstMessages = requests[0]!.messages;
+    const firstLast = firstMessages[firstMessages.length - 1]!;
+    expect((firstLast.content as { cache_control?: unknown }[])[0]!.cache_control).toEqual({
+      type: "ephemeral",
+    });
+
+    // Second request: the breakpoint has moved to the newest message (the tool_result),
+    // and no longer sits on the original user goal.
+    const secondMessages = requests[1]!.messages;
+    const secondFirst = secondMessages[0]!;
+    expect(
+      (secondFirst.content as { cache_control?: unknown }[])[0]!.cache_control,
+    ).toBeUndefined();
+    const secondLast = secondMessages[secondMessages.length - 1]!;
+    expect((secondLast.content as { cache_control?: unknown }[])[0]!.cache_control).toEqual({
+      type: "ephemeral",
+    });
   });
 });
