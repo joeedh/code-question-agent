@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron";
 
-const CDP_PORT = process.env.CDP_PORT ?? "9222";
+const CDP_PORT = process.env.CDP_PORT ?? "9333";
 const START_URL = process.env.SHELL_URL ?? "about:blank";
 
 // Must run before `app` emits "ready" — Chromium reads debugging switches at startup.

@@ -1,6 +1,8 @@
+import { isIP } from "node:net";
+import { lookup } from "node:dns/promises";
 import { truncateResult, type Tool } from "./types.ts";
 
-export const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://host.docker.internal:9222";
+export const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://host.docker.internal:9333";
 export const TIMEOUT_MS = 15_000;
 
 export interface CdpTarget {
@@ -11,8 +13,25 @@ export interface CdpTarget {
   webSocketDebuggerUrl?: string;
 }
 
+/**
+ * Chromium's DevTools HTTP server rejects any `Host` header that isn't `localhost` or a
+ * literal IP (DNS-rebinding protection), so a name like `host.docker.internal` gets a 500
+ * even though the TCP connection itself succeeds. Resolving it here rewrites the request's
+ * `Host` to the literal IP the check accepts.
+ */
+async function resolveHostLiteral(baseUrl: string): Promise<string> {
+  const url = new URL(baseUrl);
+  if (url.hostname === "localhost" || isIP(url.hostname)) return baseUrl;
+  // IPv4 is preferred because a link-local IPv6 address needs a zone id `fetch`/`WebSocket`
+  // can't supply, and Docker Desktop's `host.docker.internal` resolves to an IPv4 address.
+  const { address } = await lookup(url.hostname, { family: 4 });
+  url.hostname = address;
+  return url.toString().replace(/\/$/, "");
+}
+
 export async function listTargets(baseUrl: string): Promise<CdpTarget[]> {
-  const res = await fetch(`${baseUrl}/json/list`);
+  const resolved = await resolveHostLiteral(baseUrl);
+  const res = await fetch(`${resolved}/json/list`);
   if (!res.ok) throw new Error(`CDP /json/list returned ${res.status}`);
   return (await res.json()) as CdpTarget[];
 }
