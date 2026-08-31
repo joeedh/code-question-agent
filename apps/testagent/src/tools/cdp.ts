@@ -1,6 +1,6 @@
 import { truncateResult, type Tool } from "./types.ts";
 
-export const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://0.0.0.0:9222";
+export const DEFAULT_BASE_URL = process.env.CDP_URL ?? "http://host.docker.internal:9222";
 export const TIMEOUT_MS = 15_000;
 
 export interface CdpTarget {

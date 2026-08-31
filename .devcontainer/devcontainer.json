@@ -5,7 +5,9 @@
   },
   "remoteUser": "node",
 
-  "runArgs": ["--security-opt=no-new-privileges", "--network=host", "--add-host=host.docker.internal:host-gateway"],
+  // Docker Desktop injects host.docker.internal into every container automatically;
+  // --network=host would attach to the docker-desktop VM's netns instead of Windows.
+  "runArgs": ["--security-opt=no-new-privileges"],
 
   "customizations": {
     "vscode": {
