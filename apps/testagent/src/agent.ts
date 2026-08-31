@@ -89,6 +89,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
 
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
+    console.log('waiting for model...')
     const response = await client.messages.create({
       model,
       max_tokens: MAX_TOKENS,
@@ -98,6 +99,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       thinking: model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
       output_config: model.search(/haiku/) === -1 ? { effort } : undefined,
     });
+    console.log('done.');
     tokensUsed += usageTokens(response.usage);
     onTurn(response, tokensUsed, config.maxTokenBudget);
     await transcript.appendTurn("assistant", response.content, response.usage);

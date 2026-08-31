@@ -35,6 +35,12 @@ export async function buildSystemPrompt(
 You are a software coding agent at ${workspaceDir}.  For new projects use 
 typescript 7, bundle and serve with esbuild, package with pnpm.
 If making a web server serve at 0.0.0.0:1234 .
+
+**Invoke Servers In Background!!**  Otherwise you will block the execution of subsequent commands
+until the timeout is reached.  Check if your server is already running before starting it.
+
+This harness automatically maintains a 'finalTurns.md' in the workspace with summaries of past work.
+
 `.trim(),
     );
   } else {

@@ -7,15 +7,37 @@ import { fileCache } from "../utils.ts";
 import child_process from "node:child_process";
 import Path from "path";
 
-function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<string> {
+function runScriptAsync(tempPath: string, root: string, timeout: number): Promise<string> {
   return new Promise((resolve, reject) => {
+    // `detached` puts bash in its own process group, so a timeout can kill the whole
+    // group (pipelines, background jobs) rather than just the bash process itself —
+    // otherwise those children outlive bash and keep the stdout/stderr pipes open.
     const child = child_process.spawn('bash', [tempPath], {
       cwd: root,
-      timeout,
+      detached: true,
     });
 
     let buf = '';
-    
+    let timedOut = false;
+
+    const killGroup = (signal: NodeJS.Signals) => {
+      if (child.pid) {
+        try {
+          process.kill(-child.pid, signal);
+        } catch {
+          // group may already be gone
+        }
+      }
+    };
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      killGroup('SIGTERM');
+      // Escalate if the group ignores SIGTERM.
+      setTimeout(() => killGroup('SIGKILL'), 5000).unref();
+    }, timeout);
+    timer.unref();
+
     child.stdout.setEncoding('utf-8');
     child.stderr.setEncoding('utf-8');
 
@@ -31,15 +53,20 @@ function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<
       buf += data;
     });
 
-    // Handle spawn/system-level errors (e.g. timeout or command not found)
+    // Handle spawn/system-level errors (e.g. command not found)
     child.on('error', (err) => {
+      clearTimeout(timer);
       reject(err);
     });
 
     // Handle process completion
     child.on('close', (code, signal) => {
-      if (signal === 'SIGTERM') {
-        return reject(new Error('Process timed out after 40000ms'));
+      clearTimeout(timer);
+      if (timedOut) {
+        return reject(Object.assign(new Error(`Process timed out after ${timeout}ms`), { code: 'ETIMEDOUT' }));
+      }
+      if (signal) {
+        return reject(new Error(`Process killed by signal ${signal}`));
       }
       if (code !== 0) {
         return reject(new Error(`Process exited with code ${code}`));
@@ -51,7 +78,7 @@ function runScriptAsync(tempPath: string, root: string, timeout=40000): Promise<
 
 export const bashTool: Tool = {
   name: "bash",
-  description: `Executes a bash script you provide, cwd always starts out at the workspace root.`,
+  description: `Executes a bash script you provide, cwd always starts out at the workspace root.  40 second timeout.`,
   inputSchema: {
     type: "object",
     properties: {
@@ -83,9 +110,9 @@ export const bashTool: Tool = {
     process.stdout.write('running ' + script.slice(0, 500) + '\n');
 
     let result = ''
-    const timeout = 40
+    const timeout = 20
     try {
-      result = await runScriptAsync(`bash ${tempPath}`, root, timeout*1000);
+      result = await runScriptAsync(`${tempPath}`, root, timeout*1000);
     } catch (error: any) {
       if (error.code === 'ETIMEDOUT') {
         result = `[Command timed out after ${timeout} seconds]`
