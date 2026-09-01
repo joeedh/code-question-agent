@@ -6,6 +6,7 @@ import { skipPath, filterCode } from "../config.ts";
 import { fileCache } from "../utils.ts";
 import child_process from "node:child_process";
 import Path from "path";
+import { termColor } from "../termColor.ts";
 
 function runScriptAsync(tempPath: string, root: string, timeout: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,13 +44,17 @@ function runScriptAsync(tempPath: string, root: string, timeout: number): Promis
 
     // Stream stdout as data arrives
     child.stdout.on("data", (data) => {
-      process.stdout.write(data);
+      if (buf.length < 500) {
+        process.stdout.write(termColor(data, 'blue'));
+      }
       buf += data;
     });
 
     // Stream stderr as data arrives
     child.stderr.on("data", (data) => {
-      process.stderr.write(data);
+      if (buf.length < 500) {
+        process.stderr.write(termColor(data, 'red'));
+      }
       buf += data;
     });
 

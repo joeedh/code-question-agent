@@ -5,6 +5,7 @@ import { type Transcript } from "./transcript.ts";
 import { TOOL_REGISTRY } from "./tools/registry.ts";
 import { type ToolContext } from "./tools/types.ts";
 import fs from "node:fs";
+import { termColor } from "./termColor.ts";
 
 export const DEFAULT_MODEL = "claude-opus-5";
 export const DEFAULT_EFFORT: Effort = "high";
@@ -21,6 +22,8 @@ export function printTurn(
       process.stdout.write(block.text);
     } else if (block.type === "tool_use") {
       process.stdout.write(`\n→ ${block.name}(${JSON.stringify(block.input)})\n`);
+    } else if (block.type === "thinking") {
+      process.stdout.write(`\n→${termColor(` thinking: ${block.thinking}`, "cyan")}\n`);
     }
   }
   const budgetSuffix = maxTokenBudget === -1 ? "" : ` / ${formatTokenCount(maxTokenBudget)}`;
@@ -112,6 +115,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   let tokensUsed = 0;
   let truncated = false;
   let cachedBlock: CacheableBlock | undefined;
+  let idNameMap = new Map<string, string>()
 
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
@@ -123,7 +127,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       system,
       tools: budgetExhausted ? [] : toolDefs,
       messages,
-      thinking: model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
+      thinking: { type: "enabled", budget_tokens: 1000, display: "summarized" }, //model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
       output_config: model.search(/haiku/) === -1 ? { effort } : undefined,
     });
     console.log("done.");
@@ -131,6 +135,10 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
     onTurn(response, tokensUsed, config.maxTokenBudget);
     await transcript.appendTurn("assistant", response.content, response.usage);
     messages.push({ role: "assistant", content: response.content });
+
+    if (response.stop_reason == "end_turn") {
+      console.log("model sent back end_turn");
+    }
 
     if (response.stop_reason !== "tool_use") {
       await transcript.finalize(
@@ -162,7 +170,8 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       const limit = config.toolLimits[name] ?? -1;
       const overBudget = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
       const overLimit = limit !== -1 && callCounts[name]! >= limit;
-
+      idNameMap.set(block.id, name);
+      
       if (overBudget) {
         truncated = true;
         toolResults.push({
@@ -178,7 +187,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
-          content: `refused: ${name} call limit (${limit}) reached for this session`,
+          content: `refused: ${name} call limit (${limit}) reached for this session, write a summary of your work for another agent to continue later`,
           is_error: true,
         });
         continue;
@@ -205,7 +214,16 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       }
     }
 
-    console.log(toolResults.map((r) => r.content).join("\n"));
+    console.log(
+      termColor(
+        toolResults
+          .filter(r => idNameMap.get(r.tool_use_id) !== 'bash')
+          .map(r => r.content)
+          .join("\n")
+          .slice(0, 500),
+        "blue",
+      ),
+    );
     messages.push({ role: "user", content: toolResults });
   }
 }

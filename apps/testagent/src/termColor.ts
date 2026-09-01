@@ -1,0 +1,34 @@
+type AnsiColor = "black" | "red" | "green" | "yellow" | "blue" | "magenta" | "cyan" | "white";
+type AnsiColorExtended =
+  | AnsiColor
+  | "brightBlack"
+  | "brightRed"
+  | "brightGreen"
+  | "brightYellow"
+  | "brightBlue"
+  | "brightMagenta"
+  | "brightCyan"
+  | "brightWhite";
+const colorCodes: Record<AnsiColorExtended, string> = {
+  black: "\u001b[30m",
+  red: "\u001b[31m",
+  green: "\u001b[32m",
+  yellow: "\u001b[33m",
+  blue: "\u001b[34m",
+  magenta: "\u001b[35m",
+  cyan: "\u001b[36m",
+  white: "\u001b[37m",
+  brightBlack: "\u001b[90m",
+  brightRed: "\u001b[91m",
+  brightGreen: "\u001b[92m",
+  brightYellow: "\u001b[93m",
+  brightBlue: "\u001b[94m",
+  brightMagenta: "\u001b[95m",
+  brightCyan: "\u001b[96m",
+  brightWhite: "\u001b[97m",
+};
+
+export function termColor(text: string, color: AnsiColorExtended) {
+  const resetCode = "\u001b[0m";
+  return `${colorCodes[color]}${text}${resetCode}`;
+}
