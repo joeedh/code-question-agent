@@ -1,6 +1,11 @@
 A test agent
 
 - Uses (.gitignored) claude key in keys/claude.txt
+- Also runs models hosted on OpenRouter, using the (.gitignored) key in
+  keys/openrouter.txt. A `model` containing a slash (`z-ai/glm-5.3-flash`) is
+  read as an OpenRouter model id and routes to OpenRouter's
+  Anthropic-compatible Messages endpoint; anything else goes straight to
+  Anthropic. Tool calls and prompt-cache breakpoints work over both.
 - Supports prompt caching
 - Invoked with `pnpm testagent [path-to-workspace-dir]`
 - Has only a few tools that are explicitly specified on the command line:
