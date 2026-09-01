@@ -101,7 +101,7 @@ export const grepTool: Tool = {
     };
     const context = Math.max(0, Math.min(MAX_CONTEXT_LINES, contextLines ?? 0));
     const regexp = new RegExp(pattern);
-    
+
     const root = resolveWorkspacePath(ctx.workspaceDir, relPath ?? ".");
 
     const stat = await readdir(root, { withFileTypes: true }).catch(() => undefined);
@@ -117,7 +117,7 @@ export const grepTool: Tool = {
         try {
           content = await readFile(file, "utf8");
         } catch {
-          console.log('read error', file)
+          console.log("read error", file);
           continue;
         }
         content = filterCode(content, file);

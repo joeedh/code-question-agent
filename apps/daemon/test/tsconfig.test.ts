@@ -55,7 +55,7 @@ describe("loadProjectFileFilter", () => {
       abs("tsconfig.json"),
       [
         "{",
-        '  // narrow to source only',
+        "  // narrow to source only",
         '  "include": ["src/**/*.ts"],',
         '  "exclude": ["build"],',
         "}",

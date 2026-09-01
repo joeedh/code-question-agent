@@ -4,7 +4,7 @@ import { formatTokenCount } from "./format.ts";
 import { type Transcript } from "./transcript.ts";
 import { TOOL_REGISTRY } from "./tools/registry.ts";
 import { type ToolContext } from "./tools/types.ts";
-import fs from 'node:fs'
+import fs from "node:fs";
 
 export const DEFAULT_MODEL = "claude-opus-5";
 export const DEFAULT_EFFORT: Effort = "high";
@@ -116,7 +116,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
     cachedBlock = moveCacheBreakpoint(messages, cachedBlock);
-    console.log('waiting for model...')
+    console.log("waiting for model...");
     const response = await client.messages.create({
       model,
       max_tokens: MAX_TOKENS,
@@ -126,7 +126,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       thinking: model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
       output_config: model.search(/haiku/) === -1 ? { effort } : undefined,
     });
-    console.log('done.');
+    console.log("done.");
     tokensUsed += usageTokens(response.usage);
     onTurn(response, tokensUsed, config.maxTokenBudget);
     await transcript.appendTurn("assistant", response.content, response.usage);
@@ -144,7 +144,10 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         .map((block) => block.text)
         .join("\n");
       if (finalText.length > 0) {
-        fs.appendFileSync(`${workspaceDir}/finalTurns.md`, finalText + "\n\n====== End Turn ======\n\n");
+        fs.appendFileSync(
+          `${workspaceDir}/finalTurns.md`,
+          finalText + "\n\n====== End Turn ======\n\n",
+        );
       }
       return response;
     }
@@ -165,7 +168,8 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         toolResults.push({
           type: "tool_result",
           tool_use_id: block.id,
-          content: "refused: session token budget exhausted, write a summary of your work for another agent to continue later",
+          content:
+            "refused: session token budget exhausted, write a summary of your work for another agent to continue later",
           is_error: true,
         });
         continue;
@@ -181,9 +185,9 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       }
 
       callCounts[name] = (callCounts[name] ?? 0) + 1;
-      let limitMessage = ''
-      if (limit !== -1 && callCounts[name]! >= Math.max(~~(limit*0.75), 0)) {
-        limitMessage = `\n\n[you have ${limit-callCounts[name]!} ${name} calls remaining]`;
+      let limitMessage = "";
+      if (limit !== -1 && callCounts[name]! >= Math.max(~~(limit * 0.75), 0)) {
+        limitMessage = `\n\n[you have ${limit - callCounts[name]!} ${name} calls remaining]`;
       }
       try {
         const output = (await TOOL_REGISTRY[name].run(block.input, ctx)) + limitMessage;

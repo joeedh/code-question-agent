@@ -3,7 +3,8 @@ import { lookup } from "node:dns/promises";
 import { truncateResult, type Tool } from "./types.ts";
 
 export const DEFAULT_PORT = process.env.CDP_PORT ?? 9333;
-export const DEFAULT_BASE_URL = process.env.CDP_URL ?? `http://host.docker.internal:${DEFAULT_PORT}`;
+export const DEFAULT_BASE_URL =
+  process.env.CDP_URL ?? `http://host.docker.internal:${DEFAULT_PORT}`;
 export const TIMEOUT_MS = 15_000;
 
 export interface CdpTarget {

@@ -71,6 +71,20 @@ neither `fetch` nor `WebSocket` can supply.
   loopback, since the devcontainer's `host.docker.internal` connection
   isn't loopback from Windows's point of view.
 
+## Chromium profile directory
+
+The shell names itself `code-question-agent-shell` and points `userData` and
+`sessionData` at `%APPDATA%\code-question-agent-shell` before `app` becomes
+ready. Electron otherwise derives that path from the package name, so an
+Electron app left on the default would share cookies, local storage, cache and
+the singleton lock with any other default-named Electron process on the machine.
+Set `SHELL_PROFILE_DIR` to use a different directory (a throwaway one per test
+run, for instance).
+
+The shell also takes `app.requestSingleInstanceLock()` and exits if another
+instance already holds the profile — a second one could not bind `CDP_PORT`
+anyway, and would leave a window the `cdp` tool can never reach.
+
 ## Security note
 
 `--remote-debugging-address=0.0.0.0` plus an open firewall port exposes the

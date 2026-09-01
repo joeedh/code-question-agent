@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import * as esbuild from "esbuild";
 
-const COMMAND = process.argv.find(s => s ==='clean') ? 'clean' : 'build'
+const COMMAND = process.argv.find((s) => s === "clean") ? "clean" : "build";
 
 const execFileAsync = promisify(execFile);
 
@@ -63,14 +63,14 @@ async function declareMember(memberDir) {
 }
 
 const members = await findWorkspaceMembers();
-if (COMMAND === 'clean') {
+if (COMMAND === "clean") {
   for (const memberDir of members) {
     const distDir = path.join(memberDir, "dist");
     if (existsSync(distDir)) {
       await rm(distDir, { recursive: true, force: true });
     }
   }
-  process.exit(0)
+  process.exit(0);
 }
 
 await Promise.all(members.map(bundleMember));

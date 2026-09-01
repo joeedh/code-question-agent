@@ -109,8 +109,24 @@ describe("file-scoped queries (--include/--exclude)", () => {
     await db
       .insertInto("occurrences")
       .values([
-        { symbol_id: symbolId, file: srcUri, line: 5, col: 0, end_line: 5, end_col: 5, kind: "call" },
-        { symbol_id: symbolId, file: testUri, line: 9, col: 0, end_line: 9, end_col: 5, kind: "call" },
+        {
+          symbol_id: symbolId,
+          file: srcUri,
+          line: 5,
+          col: 0,
+          end_line: 5,
+          end_col: 5,
+          kind: "call",
+        },
+        {
+          symbol_id: symbolId,
+          file: testUri,
+          line: 9,
+          col: 0,
+          end_line: 9,
+          end_col: 5,
+          kind: "call",
+        },
       ])
       .execute();
 

@@ -1,7 +1,7 @@
 {
   "name": "code-question-agent",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
   },
   "remoteUser": "node",
 
@@ -11,14 +11,10 @@
 
   "customizations": {
     "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "vitest.explorer"
-      ]
-    }
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "vitest.explorer"],
+    },
   },
 
   "onCreateCommand": "createCommand.sh",
-  "postCreateCommand": ""
+  "postCreateCommand": "",
 }

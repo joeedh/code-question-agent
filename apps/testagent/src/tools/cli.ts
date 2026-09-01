@@ -57,7 +57,7 @@ export const cliTool: Tool = {
     const { args } = input as { args: string[] };
     const { output, exitCode } = await runCli(args, ctx.workspaceDir);
     const result = truncateResult(`exit code: ${exitCode}\n${output}`);
-    console.log(result)
+    console.log(result);
     return result;
   },
 };

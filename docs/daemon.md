@@ -18,7 +18,7 @@ See also: [`docs/cli.md`](cli.md) for the client side,
   `live.sqlite`, a `checkpoints/` directory, and `daemon.json`.
 - `ipcAddress` — a Windows named pipe (`\\.\pipe\code-question-agent-<repoId>`) or, on POSIX,
   a Unix domain socket under `XDG_RUNTIME_DIR` (falling back to the OS temp dir) —
-  deliberately *not* under `dataDir`, since a home-dir-nested socket path can exceed the
+  deliberately _not_ under `dataDir`, since a home-dir-nested socket path can exceed the
   platform length limit. Never a TCP port.
 - `daemon.json` (`metadataPath`) — `{ pid, ipcAddress, startedAt }`, written after the IPC
   server is listening. A hint only; `isAddressLive` (an actual connect attempt) is the only
@@ -71,15 +71,15 @@ project source:
 JSON-RPC over the socket/pipe (`vscode-jsonrpc`). Three requests:
 
 - `status` → `StatusResult`: `{ pid, repoRoot, startedAt, indexing, filesIndexed?, filesTotal?
-  }`. `filesTotal`/`filesIndexed` track the cold-start scan's progress — `filesTotal` is set
+}`. `filesTotal`/`filesIndexed` track the cold-start scan's progress — `filesTotal` is set
   once `listTrackedFiles` resolves, `filesIndexed` increments after each file — and are the
   daemon-side half of the CLI's `-v`'s `scan` tag (`docs/cli.md`).
 - `query` → `Report`, given a `QueryRequest`: `{ query: Query, report: "symbol-info" |
-  "what-refs" | "enclosing-scope" }`. `Query` (symbol name or regexp, plus optional
+"what-refs" | "enclosing-scope" }`. `Query` (symbol name or regexp, plus optional
   `file`/`line`/`col`/`fileInclude`/`fileExclude`) lives in `@code-question-agent/core`;
   which report shape to answer with is an IPC-level concern layered on top, not part of
   `Query` itself.
-- `shutdown` → closes the daemon. Answered via `setImmediate` *before* running the actual
+- `shutdown` → closes the daemon. Answered via `setImmediate` _before_ running the actual
   shutdown, because `shutdown()` closes the IPC server, which waits for every open
   connection — including the one carrying this request — to finish first; answering first
   avoids that deadlock.
@@ -106,7 +106,7 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
   `fileExclude` narrow both which symbol's references are answered and which of that symbol's
   reference locations are kept.
 - `enclosingScope` → `EnclosingScope` — resolves one symbol, then walks `edges.kind =
-  'contains'` upward via a recursive CTE, nearest scope first, empty `trace` at script root.
+'contains'` upward via a recursive CTE, nearest scope first, empty `trace` at script root.
 
 ## Indexing (`src/indexer.ts`)
 
@@ -130,7 +130,7 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
 - `chokidar.watch(repoRoot, { ignored: NEVER_WATCHED })`, where `NEVER_WATCHED` is
   `/(^|[/\\])(\.git|node_modules)([/\\]|$)/` — a cheap prefilter so a dependency install or a
   build never even raises events for paths that would be discarded anyway. `git
-  check-ignore` remains the actual source of truth for what's tracked.
+check-ignore` remains the actual source of truth for what's tracked.
 - Events are coalesced, not filtered per-event:
   - `add`/`change` → added to a `changed` Set (and removed from `removed`, in case of a
     delete-then-recreate in the same window); `unlink` does the reverse.
@@ -144,7 +144,7 @@ startup (to refuse double-binding on POSIX): opens a real socket connection and 
   - **Why this matters**: debouncing was previously applied only to the cheap dispatch, after
     an unbatched per-event `filterIgnored` call — so a write burst (`pnpm install`, a build)
     spawned one `git` process per file, thousands at once, racing to start `git
-    fsmonitor--daemon` on repos with `core.fsmonitor` on and leaking dozens of orphaned
+fsmonitor--daemon` on repos with `core.fsmonitor` on and leaking dozens of orphaned
     daemons. See `docs/debugging.md`'s "Debouncing after a process spawn does not limit
     process spawns" entry for the full incident.
 - Separately, `.git/logs/HEAD` (the reflog, appended on every ref update — commit, checkout,

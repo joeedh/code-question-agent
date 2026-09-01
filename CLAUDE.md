@@ -209,6 +209,7 @@ that would follow the closing bracket — it separates the subject from its verb
 <!-- commentlint-on -->
 
 ## todos.md
+
 - todos.md is a todo list
   - markdown checkbox list
   - check items off as they are completed

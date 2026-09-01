@@ -124,7 +124,7 @@ See also: [`docs/daemon.md`](daemon.md) for how the daemon drives this package,
 
 - This package never talks to `lsp-bridge` or spawns `tsc` — it consumes already-shaped
   `DocumentSymbol`/`Location` values and hands back rows.
-- This package never talks to `chokidar` or decides *when* to re-index — `apps/daemon`'s
+- This package never talks to `chokidar` or decides _when_ to re-index — `apps/daemon`'s
   watcher decides that and calls `replaceFileIndex`/`recordFileState`.
 - Tree-hash/checkpoint git operations shell out to `git` directly (`execFile`), the same
   "git is the single source of truth" choice `apps/daemon/src/watcher.ts` makes for ignore
