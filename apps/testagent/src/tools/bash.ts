@@ -45,7 +45,7 @@ function runScriptAsync(tempPath: string, root: string, timeout: number): Promis
     // Stream stdout as data arrives
     child.stdout.on("data", (data) => {
       if (buf.length < 500) {
-        process.stdout.write(termColor(data, 'blue'));
+        process.stdout.write(termColor(data, "blue"));
       }
       buf += data;
     });
@@ -53,7 +53,7 @@ function runScriptAsync(tempPath: string, root: string, timeout: number): Promis
     // Stream stderr as data arrives
     child.stderr.on("data", (data) => {
       if (buf.length < 500) {
-        process.stderr.write(termColor(data, 'red'));
+        process.stderr.write(termColor(data, "red"));
       }
       buf += data;
     });

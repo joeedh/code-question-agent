@@ -32,8 +32,8 @@ export async function buildSystemPrompt(
   if (tools.includes("bash")) {
     sections.push(
       `
-You are a software coding agent at ${workspaceDir}.  For new projects use 
-typescript 7, bundle and serve with esbuild, package with pnpm.
+You are a software coding agent at workspace dir: ${workspaceDir}.  
+For new projects use typescript 7, bundle and serve with esbuild, package with pnpm.
 If making a web server serve at 0.0.0.0:1234 .
 
 **Invoke Servers In Background!!**  Otherwise you will block the execution of subsequent commands

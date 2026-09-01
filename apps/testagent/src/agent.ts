@@ -115,7 +115,12 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   let tokensUsed = 0;
   let truncated = false;
   let cachedBlock: CacheableBlock | undefined;
-  let idNameMap = new Map<string, string>()
+  let idNameMap = new Map<string, string>();
+
+  const thinking =
+    model.search(/claude-(fable|opus|sonnet)/) !== -1
+      ? { type: "adaptive" as const, display: "summarized" as const }
+      : { type: "enabled" as const, budget_tokens: 1000, display: "summarized" as const };
 
   for (;;) {
     const budgetExhausted = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
@@ -127,7 +132,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       system,
       tools: budgetExhausted ? [] : toolDefs,
       messages,
-      thinking: { type: "enabled", budget_tokens: 1000, display: "summarized" }, //model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
+      thinking, //model.search(/haiku/) === -1 ? { type: "adaptive" } : undefined,
       output_config: model.search(/haiku/) === -1 ? { effort } : undefined,
     });
     console.log("done.");
@@ -171,7 +176,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       const overBudget = config.maxTokenBudget !== -1 && tokensUsed >= config.maxTokenBudget;
       const overLimit = limit !== -1 && callCounts[name]! >= limit;
       idNameMap.set(block.id, name);
-      
+
       if (overBudget) {
         truncated = true;
         toolResults.push({
@@ -217,8 +222,8 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
     console.log(
       termColor(
         toolResults
-          .filter(r => idNameMap.get(r.tool_use_id) !== 'bash')
-          .map(r => describeToolOutput(r.content))
+          .filter((r) => idNameMap.get(r.tool_use_id) !== "bash")
+          .map((r) => describeToolOutput(r.content))
           .join("\n")
           .slice(0, 500),
         "blue",
