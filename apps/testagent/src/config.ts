@@ -1,9 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { isOpenRouterModel } from "./provider.ts";
 import { isCode, stripComments } from "./utils.ts";
 
-export const TOOL_NAMES = ["cli", "grep", "read", "ls", "cdp", "bash"] as const;
+export const TOOL_NAMES = ["cli", "grep", "read", "ls", "cdp", "bash", "image"] as const;
 export type ToolName = (typeof TOOL_NAMES)[number];
+
+/** Tools whose result carries an `image` block, so a text-only model cannot be offered them. */
+export const VISION_TOOLS: readonly ToolName[] = ["image"];
 
 export const EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type Effort = (typeof EFFORT_LEVELS)[number];
@@ -21,6 +25,8 @@ export interface TestAgentConfig {
   maxTokenBudget: number;
   model?: string;
   effort?: Effort;
+  /** Overrides the guess `modelSupportsVision` makes about whether `model` reads images. */
+  visionCapable?: boolean;
   grepExclude?: string[];
   // hide all comments and non-code files from
   // the model
@@ -104,6 +110,12 @@ export function validateConfig(raw: unknown, configPath: string): TestAgentConfi
     effort = obj.effort as Effort;
   }
 
+  let visionCapable: boolean | undefined;
+  if (obj.visionCapable !== undefined) {
+    if (typeof obj.visionCapable !== "boolean") fail('"visionCapable" must be a boolean');
+    visionCapable = obj.visionCapable as boolean;
+  }
+
   const grepExclude = [] as string[];
   for (const s of (obj.grepExclude as any) ?? []) {
     if (typeof s !== "string") {
@@ -139,6 +151,7 @@ export function validateConfig(raw: unknown, configPath: string): TestAgentConfi
     maxTokenBudget: maxTokenBudget as number,
     model,
     effort,
+    visionCapable,
     stripAllDocs,
   });
 
@@ -187,18 +200,48 @@ export async function loadConfig(
 }
 
 /**
+ * Reports whether the configured model can read `image` blocks. `visionCapable` in the config
+ * file settles it; otherwise a Claude model (the default when `model` is unset) is taken as
+ * capable, and an OpenRouter `<vendor>/<name>` id as not, since sending an image to a
+ * text-only model there fails the whole request rather than degrading.
+ */
+export function modelSupportsVision(config: TestAgentConfig): boolean {
+  if (config.visionCapable !== undefined) return config.visionCapable;
+  if (config.model === undefined) return true;
+  return !isOpenRouterModel(config.model);
+}
+
+/**
  * Resolves the effective tool set: `--tools=` is a subset filter over `config.enabledTools`.
- * Errors if `--tools=` names a tool that config either omits or limits to zero calls.
+ * Errors if `--tools=` names a tool that config either omits or limits to zero calls. A tool
+ * from `VISION_TOOLS` is dropped when the model cannot read images, and named explicitly it
+ * is an error instead.
  */
 export function resolveToolSelection(
   cliToolsFlag: ToolName[] | undefined,
   config: TestAgentConfig,
 ): ToolName[] {
-  if (cliToolsFlag === undefined) return config.enabledTools;
+  const vision = modelSupportsVision(config);
+  if (cliToolsFlag === undefined) {
+    const dropped = config.enabledTools.filter((tool) => !vision && VISION_TOOLS.includes(tool));
+    if (dropped.length > 0) {
+      console.warn(
+        `warning: disabling ${dropped.join(", ")} because model ${JSON.stringify(config.model)} ` +
+          `is not known to read images. Set "visionCapable": true in the config file to keep them.`,
+      );
+    }
+    return config.enabledTools.filter((tool) => !dropped.includes(tool));
+  }
   for (const tool of cliToolsFlag) {
     if (!config.enabledTools.includes(tool)) {
       throw new Error(
         `--tools names ${JSON.stringify(tool)}, but it is not in "enabledTools" in the config file`,
+      );
+    }
+    if (!vision && VISION_TOOLS.includes(tool)) {
+      throw new Error(
+        `--tools names ${JSON.stringify(tool)}, but model ${JSON.stringify(config.model)} is not ` +
+          `known to read images. Set "visionCapable": true in the config file to override this.`,
       );
     }
   }

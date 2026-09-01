@@ -8,7 +8,12 @@ import { buildSystemPrompt } from "./systemPrompt.ts";
 import { openTranscript } from "./transcript.ts";
 import { loadGrepConfig } from "./tools/grep.ts";
 export { formatHelp, parseTestAgentArgs, type TestAgentOptions } from "./args.ts";
-export { loadConfig, resolveToolSelection, type TestAgentConfig } from "./config.ts";
+export {
+  loadConfig,
+  modelSupportsVision,
+  resolveToolSelection,
+  type TestAgentConfig,
+} from "./config.ts";
 export { loadClaudeKey, loadOpenRouterKey } from "./key.ts";
 export { createClient, isOpenRouterModel } from "./provider.ts";
 export { runSession } from "./agent.ts";

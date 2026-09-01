@@ -20,26 +20,30 @@ describe("lsTool", () => {
   });
 
   it("lists files and directories, sorted, with a trailing slash on directories", async () => {
-    const result = await lsTool.run({}, { workspaceDir });
+    const result = (await lsTool.run({}, { workspaceDir, visionCapable: false })) as string;
     expect(result.split("\n")).toEqual(["a.ts", "b.ts", "sub/"]);
   });
 
   it("skips ignored directory names", async () => {
-    const result = await lsTool.run({}, { workspaceDir });
+    const result = await lsTool.run({}, { workspaceDir, visionCapable: false });
     expect(result).not.toContain("node_modules");
   });
 
   it("lists a subdirectory when path is given", async () => {
     await writeFile(path.join(workspaceDir, "sub", "c.ts"), "");
-    const result = await lsTool.run({ path: "sub" }, { workspaceDir });
+    const result = await lsTool.run({ path: "sub" }, { workspaceDir, visionCapable: false });
     expect(result).toBe("c.ts");
   });
 
   it("rejects an absolute path", async () => {
-    await expect(lsTool.run({ path: "/etc" }, { workspaceDir })).rejects.toThrow(/absolute/);
+    await expect(
+      lsTool.run({ path: "/etc" }, { workspaceDir, visionCapable: false }),
+    ).rejects.toThrow(/absolute/);
   });
 
   it("rejects a path that escapes the workspace", async () => {
-    await expect(lsTool.run({ path: "../" }, { workspaceDir })).rejects.toThrow(/escapes/);
+    await expect(
+      lsTool.run({ path: "../" }, { workspaceDir, visionCapable: false }),
+    ).rejects.toThrow(/escapes/);
   });
 });

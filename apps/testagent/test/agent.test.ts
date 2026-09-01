@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -106,6 +106,56 @@ describe("runSession", () => {
     const toolResult = (lastMessage.content as Anthropic.ToolResultBlockParam[])[0]!;
     expect(toolResult.is_error).toBe(true);
     expect(toolResult.content).toContain("call limit");
+  });
+
+  it("sends an image tool's result to the model as an image block", async () => {
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await writeFile(path.join(workspaceDir, "shot.png"), png);
+    const responses = [
+      toolUseResponse("call1", "image", { path: "shot.png" }),
+      textResponse("looks right"),
+    ];
+    const requests: Anthropic.MessageCreateParams[] = [];
+    const client = {
+      messages: {
+        create: async (params: Anthropic.MessageCreateParams) => {
+          requests.push(structuredClone(params));
+          return responses.shift()!;
+        },
+      },
+    } as unknown as Anthropic;
+
+    const config: TestAgentConfig = {
+      enabledTools: ["image"],
+      toolLimits: { image: -1 },
+      maxTokenBudget: -1,
+      model: "claude-opus-5",
+      stripAllDocs: {},
+    };
+
+    await runSession({
+      client,
+      config,
+      tools: ["image"],
+      systemPrompt: "system",
+      goal: "look at the screenshot",
+      workspaceDir,
+      transcript: fakeTranscript(),
+      onTurn: () => {},
+    });
+
+    const messages = requests[1]!.messages;
+    const lastMessage = messages[messages.length - 1]!;
+    const toolResult = (lastMessage.content as Anthropic.ToolResultBlockParam[])[0]!;
+    const blocks = toolResult.content as Anthropic.ImageBlockParam[];
+    expect(blocks[0]).toMatchObject({
+      type: "image",
+      source: { type: "base64", media_type: "image/png", data: png.toString("base64") },
+    });
+    expect(blocks[1]).toMatchObject({ type: "text" });
   });
 
   it("withholds tools once the token budget is exhausted", async () => {

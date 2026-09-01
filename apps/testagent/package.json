@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
-    "@code-question-agent/cli": "workspace:*"
+    "@code-question-agent/cli": "workspace:*",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@types/node": "^24.13.3"

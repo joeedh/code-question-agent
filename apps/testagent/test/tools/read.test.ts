@@ -17,27 +17,27 @@ describe("readTool", () => {
   });
 
   it("reads a whole file with 1-indexed line numbers", async () => {
-    const result = await readTool.run({ path: "file.txt" }, { workspaceDir });
+    const result = await readTool.run({ path: "file.txt" }, { workspaceDir, visionCapable: false });
     expect(result).toBe("1: one\n2: two\n3: three\n4: four\n5: five");
   });
 
   it("honors a startLine/endLine range", async () => {
     const result = await readTool.run(
       { path: "file.txt", startLine: 2, endLine: 3 },
-      { workspaceDir },
+      { workspaceDir, visionCapable: false },
     );
     expect(result).toBe("2: two\n3: three");
   });
 
   it("rejects an absolute path", async () => {
-    await expect(readTool.run({ path: "/etc/passwd" }, { workspaceDir })).rejects.toThrow(
-      /absolute/,
-    );
+    await expect(
+      readTool.run({ path: "/etc/passwd" }, { workspaceDir, visionCapable: false }),
+    ).rejects.toThrow(/absolute/);
   });
 
   it("rejects a path that escapes the workspace", async () => {
-    await expect(readTool.run({ path: "../outside.txt" }, { workspaceDir })).rejects.toThrow(
-      /escapes/,
-    );
+    await expect(
+      readTool.run({ path: "../outside.txt" }, { workspaceDir, visionCapable: false }),
+    ).rejects.toThrow(/escapes/);
   });
 });

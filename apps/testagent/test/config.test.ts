@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   loadConfig,
+  modelSupportsVision,
   resolveToolSelection,
   validateConfig,
   type TestAgentConfig,
@@ -32,6 +33,18 @@ describe("validateConfig", () => {
     );
     expect(config.model).toBe("claude-opus-5");
     expect(config.effort).toBe("xhigh");
+  });
+
+  it("accepts an explicit visionCapable flag", () => {
+    expect(validateConfig({ ...VALID, visionCapable: false }, "config.json").visionCapable).toBe(
+      false,
+    );
+  });
+
+  it("rejects a non-boolean visionCapable", () => {
+    expect(() => validateConfig({ ...VALID, visionCapable: "yes" }, "config.json")).toThrow(
+      /visionCapable/,
+    );
   });
 
   it("rejects an unknown tool name in enabledTools", () => {
@@ -130,5 +143,60 @@ describe("loadConfig", () => {
       const message = error instanceof Error ? error.message : String(error);
       return message.includes(workspaceDir) && message.includes(invocationCwd);
     });
+  });
+});
+
+describe("modelSupportsVision", () => {
+  const base: TestAgentConfig = {
+    enabledTools: [],
+    toolLimits: {},
+    maxTokenBudget: -1,
+    stripAllDocs: {},
+  };
+
+  it("assumes vision for the default model", () => {
+    expect(modelSupportsVision(base)).toBe(true);
+  });
+
+  it("assumes vision for a Claude model id", () => {
+    expect(modelSupportsVision({ ...base, model: "claude-opus-5" })).toBe(true);
+  });
+
+  it("assumes no vision for an OpenRouter model id", () => {
+    expect(modelSupportsVision({ ...base, model: "z-ai/glm-5.3-flash" })).toBe(false);
+  });
+
+  it("lets visionCapable override the guess in both directions", () => {
+    expect(modelSupportsVision({ ...base, model: "z-ai/glm-5.3-flash", visionCapable: true })).toBe(
+      true,
+    );
+    expect(modelSupportsVision({ ...base, model: "claude-opus-5", visionCapable: false })).toBe(
+      false,
+    );
+  });
+});
+
+describe("resolveToolSelection vision gating", () => {
+  const textOnly: TestAgentConfig = {
+    enabledTools: ["grep", "image"],
+    toolLimits: { grep: -1, image: -1 },
+    maxTokenBudget: -1,
+    model: "z-ai/glm-5.3-flash",
+    stripAllDocs: {},
+  };
+
+  it("drops a vision tool from enabledTools for a text-only model", () => {
+    expect(resolveToolSelection(undefined, textOnly)).toEqual(["grep"]);
+  });
+
+  it("keeps it once visionCapable says the model reads images", () => {
+    expect(resolveToolSelection(undefined, { ...textOnly, visionCapable: true })).toEqual([
+      "grep",
+      "image",
+    ]);
+  });
+
+  it("errors when --tools names a vision tool a text-only model cannot use", () => {
+    expect(() => resolveToolSelection(["image"], textOnly)).toThrow(/not\s+known to read images/);
   });
 });

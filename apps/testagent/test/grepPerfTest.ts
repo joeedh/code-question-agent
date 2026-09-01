@@ -21,7 +21,10 @@ loadGrepConfig(config);
 for (let i = 0; i < runs; i++) {
   const time = performance.now();
   console.log(workspaceDir, "pattern:", pattern);
-  const result = await grepTool.run({ pattern }, { workspaceDir: workspaceDir });
+  const result = await grepTool.run(
+    { pattern },
+    { visionCapable: false, workspaceDir: workspaceDir },
+  );
   console.log("got", result.length, "bytes back");
   console.log(`${i + 1} of ${runs}: `, (performance.now() - time).toFixed(2) + "ms");
 }

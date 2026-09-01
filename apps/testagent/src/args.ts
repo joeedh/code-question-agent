@@ -57,7 +57,8 @@ const HELP_TEXT = `Usage: pnpm testagent -- <path-to-workspace-dir> [flags]
 
 Flags:
   --tools <a,b,c>   Restrict this run to a subset of the config's enabledTools
-                    (cli, grep, read, ls). Omit to use every enabled tool.
+                    (cli, grep, read, ls, cdp, bash, image). Omit to use every
+                    enabled tool.
   --goal <text>     The task to give the agent. Required unless --help.
   -h, --help        Print this help and exit.
 

@@ -1,9 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { type Effort, type TestAgentConfig, type ToolName } from "./config.ts";
+import { modelSupportsVision, type Effort, type TestAgentConfig, type ToolName } from "./config.ts";
 import { formatTokenCount } from "./format.ts";
 import { type Transcript } from "./transcript.ts";
 import { TOOL_REGISTRY } from "./tools/registry.ts";
-import { type ToolContext } from "./tools/types.ts";
+import { appendNote, describeToolOutput, type ToolContext } from "./tools/types.ts";
 import fs from "node:fs";
 import { termColor } from "./termColor.ts";
 
@@ -101,7 +101,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
   const model = config.model ?? DEFAULT_MODEL;
   const effort = config.effort ?? DEFAULT_EFFORT;
   const toolDefs = buildToolDefs(tools);
-  const ctx: ToolContext = { workspaceDir };
+  const ctx: ToolContext = { workspaceDir, visionCapable: modelSupportsVision(config) };
 
   const system: Anthropic.TextBlockParam[] = [
     { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
@@ -199,7 +199,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
         limitMessage = `\n\n[you have ${limit - callCounts[name]!} ${name} calls remaining]`;
       }
       try {
-        const output = (await TOOL_REGISTRY[name].run(block.input, ctx)) + limitMessage;
+        const output = appendNote(await TOOL_REGISTRY[name].run(block.input, ctx), limitMessage);
         await transcript.appendToolCall(name, block.input, output, false, callCounts[name]!);
         toolResults.push({ type: "tool_result", tool_use_id: block.id, content: output });
       } catch (error) {
@@ -218,7 +218,7 @@ export async function runSession(opts: RunSessionOptions): Promise<Anthropic.Mes
       termColor(
         toolResults
           .filter(r => idNameMap.get(r.tool_use_id) !== 'bash')
-          .map(r => r.content)
+          .map(r => describeToolOutput(r.content))
           .join("\n")
           .slice(0, 500),
         "blue",

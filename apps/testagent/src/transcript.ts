@@ -2,13 +2,14 @@ import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { type Effort, type ToolName } from "./config.ts";
+import { elideImageData, type ToolOutput } from "./tools/types.ts";
 
 export interface Transcript {
   appendTurn(role: "user" | "assistant", content: unknown, usage?: unknown): Promise<void>;
   appendToolCall(
     name: ToolName,
     input: unknown,
-    output: string,
+    output: ToolOutput,
     isError: boolean,
     callIndexForTool: number,
   ): Promise<void>;
@@ -53,7 +54,9 @@ export async function openTranscript(
       await write({ type: "turn", role, content, usage });
     },
     async appendToolCall(name, input, output, isError, callIndexForTool) {
-      await write({ type: "tool_call", name, input, output, isError, callIndexForTool });
+      // Elided here rather than at the call site so no caller can write base64 into the log.
+      const elided = elideImageData(output);
+      await write({ type: "tool_call", name, input, output: elided, isError, callIndexForTool });
     },
     async finalize(stopReason, totalTokens, callCounts, truncated) {
       await write({

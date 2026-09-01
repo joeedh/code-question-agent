@@ -19,7 +19,10 @@ describe.runIf(existsSync(cliEntry))("cliTool", () => {
   });
 
   it("spawns the code-question-agent CLI and captures its output", async () => {
-    const result = await cliTool.run({ args: ["--llm-help"] }, { workspaceDir });
+    const result = await cliTool.run(
+      { args: ["--llm-help"] },
+      { workspaceDir, visionCapable: false },
+    );
     expect(result).toContain("exit code: 0");
     expect(result).toContain("code-question-agent");
   });
